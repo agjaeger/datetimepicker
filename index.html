@@ -45,6 +45,17 @@
 		<div id="dtp_calendar"></div>
 		
         <script>
+			// check how many days in a month code from https://dzone.com/articles/determining-number-days-month
+			function daysInMonth(iMonth, iYear) {
+				return 32 - new Date(iYear, iMonth, 32).getDate();
+			}
+		
+			// get week number adapted from https://stackoverflow.com/questions/7765767/show-week-number-with-javascript
+			function getWeek (date) {
+				var onejan = new Date(date.getFullYear(), 0, 4);
+				return Math.ceil((((date - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+			}
+		
 			function getDaysOfTheWeek () {
 				return [
 					"Sun",
@@ -56,7 +67,8 @@
 					"Sat"
 				];
 			}
-		
+
+
 			function buildCalendarTableHead (calendarDiv) {
 				var headRow = document.createElement("tr");
 				
@@ -80,21 +92,45 @@
 			}
 			
 			function buildCalendarTableBody (calendarDiv) {
+				today = new Date();
+				currentMonth = today.getMonth();
+				currentYear = today.getFullYear();
+
+				var d = new Date(currentYear, currentMonth)
+			    let firstDay = d.getDay();
+			    let firstWeek = getWeek(d);
+
 				var tableBody = document.createElement("tbody");
 
-				for (var wIdx = 0; wIdx < 5; wIdx++) {
+				var numDaysInMonth = daysInMonth(currentMonth, currentYear);
+				
+				var dayIdx = 1;
+				
+				for (var rowIdx = 0; rowIdx < 5; rowIdx++) {
 					var tableRow = document.createElement("tr");
 				
+					// build week row cell
 					var weekNumCell = document.createElement("td");
-					weekNumCell.innerHTML = "W" + wIdx;
-					
+					weekNumCell.innerHTML = (firstWeek + rowIdx);
 					tableRow.appendChild(weekNumCell);
 					
-					for (var dIdx = 0; dIdx < 7; dIdx++) {
-						var dayNumCell = document.createElement("td");
-						dayNumCell.innerHTML = dIdx;
-						
-						tableRow.appendChild(dayNumCell);
+					// build day cells
+					for (var colIdx = 0; colIdx < 7; colIdx++) {
+						if (rowIdx === 0 && colIdx < firstDay) {
+							// if cell is before the current month
+							var dayNumCell = document.createElement("td");
+							tableRow.appendChild(dayNumCell);
+						} else if (dayIdx > numDaysInMonth) {
+							// if cell is after the current month
+							var dayNumCell = document.createElement("td");
+							tableRow.appendChild(dayNumCell);
+						} else {
+							var dayNumCell = document.createElement("td");
+							dayNumCell.innerHTML = dayIdx;					
+							tableRow.appendChild(dayNumCell);
+							
+							dayIdx++;
+						}
 					}
 					
 					// append checkbox for week selection
