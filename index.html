@@ -44,6 +44,14 @@
     <body>
 		<div id="dtp_calendar"></div>
 		
+		<script>
+			function onCellClick (id, isWeekSelectionToggle, isDaySelectionToggle) {
+				console.log("Hello world", id);
+			}
+			
+		
+		</script>
+		
         <script>
 			// check how many days in a month code from https://dzone.com/articles/determining-number-days-month
 			function daysInMonth(iMonth, iYear) {
@@ -126,6 +134,11 @@
 							tableRow.appendChild(dayNumCell);
 						} else {
 							var dayNumCell = document.createElement("td");
+							dayNumCell.id = dayIdx + "-" + currentMonth + "-" + currentYear;
+							dayNumCell.onclick = function () {
+								onCellClick(this.id, false, false);
+							};
+							
 							dayNumCell.innerHTML = dayIdx;					
 							tableRow.appendChild(dayNumCell);
 							
@@ -134,16 +147,13 @@
 					}
 					
 					// append checkbox for week selection
-					var checkbox = document.createElement('input');
-					checkbox.type = "checkbox";
-					checkbox.name = "name";
-					checkbox.value = "value";
-					checkbox.id = "id";
-					
-					var cbCell = document.createElement("td");
-					cbCell.appendChild(checkbox);
+					var weekSelectionToggleCell = document.createElement("td");
+					weekSelectionToggleCell.id = "week-"+rowIdx;
+					weekSelectionToggleCell.onclick = function () {
+						onCellClick(this.id, true, false);
+					};
 
-					tableRow.appendChild(cbCell);
+					tableRow.appendChild(weekSelectionToggleCell);
 					
 					// after constructing the row, append it to the body
 					tableBody.appendChild(tableRow);
@@ -155,16 +165,13 @@
 				checkboxRow.appendChild(document.createElement("td")); // append placeholder for week number
 				
 				for (var dIdx = 0; dIdx < 7; dIdx++) {
-					var checkbox = document.createElement('input');
-					checkbox.type = "checkbox";
-					checkbox.name = "name";
-					checkbox.value = "value";
-					checkbox.id = "id";
-				
-					var cbCell = document.createElement("td");
-					cbCell.appendChild(checkbox);
+					var daySelectionToggleCell = document.createElement("td");
+					daySelectionToggleCell.id = "dotw-"+dIdx;
+					daySelectionToggleCell.onclick = function () {
+						onCellClick(this.id, false, true);
+					};
 					
-					checkboxRow.appendChild(cbCell);
+					checkboxRow.appendChild(daySelectionToggleCell);
 				}
 				
 				tableBody.appendChild(checkboxRow);
