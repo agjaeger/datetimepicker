@@ -42,105 +42,103 @@
     </head>
 
     <body>
-		<h1>Input In Container Fixed To Top Of Viewport</h1>
-
-		<div id="dtp_calendar">
-			<table>
-				<thead>
-					<tr>
-						<td></td>
-						<td>Sun</td>
-						<td>Mon</td>
-						<td>Tue</td>
-						<td>Wed</td>
-						<td>Thu</td>
-						<td>Fri</td>
-						<td>Sat</td>
-				</thead>
-				
-				<tbody>
-					<tr>
-						<td>41</td>
-
-						<td data-date="29" data-month="8" data-year="2019">29</td>
-						<td>30</td>
-						<td>1</td>
-						<td>2</td>
-						<td>3</td>
-						<td>4</td>
-						<td>5</td>
-						<td><input id="myCheckbox" type="checkbox"/></td>
-					</tr>
-
-					<tr>
-						<td>42</td>
-
-						<td>6</td>
-						<td>7</td>
-						<td>8</td>
-						<td>9</td>
-						<td>10</td>
-						<td>11</td>
-						<td>12</td>
-						<td><input id="myCheckbox" type="checkbox" /></td>
-					</tr>
-
-					<tr>
-						<td>43</td>
-
-						<td>13</td>
-						<td>14</td>
-						<td>15</td>
-						<td>16</td>
-						<td>17</td>
-						<td>18</td>
-						<td>19</td>
-						<td><input id="myCheckbox" type="checkbox" /></td>
-					</tr>
-				
-					<tr>
-						<td>44</td>
-
-						<td>20</td>
-						<td>21</td>
-						<td>22</td>
-						<td>23</td>
-						<td>24</td>
-						<td>25</td>
-						<td>26</td>
-						<td><input id="myCheckbox" type="checkbox" /></td>
-					</tr>
-
-					<tr>
-						<td>45</td>
-
-						<td>27</td>
-						<td>28</td>
-						<td>29</td>
-						<td>30</td>
-						<td>21</td>
-						<td>1</td>
-						<td>2</td>
-						<td><input id="myCheckbox" type="checkbox" /></td>
-					</tr>
-
-					<tr>
-						<td></td>
-
-						<td><input id="myCheckbox" type="checkbox" /></td>
-						<td><input id="myCheckbox" type="checkbox" /></td>
-						<td><input id="myCheckbox" type="checkbox" /></td>
-						<td><input id="myCheckbox" type="checkbox" /></td>
-						<td><input id="myCheckbox" type="checkbox" /></td>
-						<td><input id="myCheckbox" type="checkbox" /></td>
-						<td><input id="myCheckbox" type="checkbox" /></td>
-					</tr>						
-				</tbody>
-			</table>
-		</div>
+		<div id="dtp_calendar"></div>
 		
         <script>
+			function getDaysOfTheWeek () {
+				return [
+					"Sun",
+					"Mon",
+					"Tue",
+					"Wed",
+					"Thu",
+					"Fri",
+					"Sat"
+				];
+			}
+		
+			function buildCalendarTableHead (calendarDiv) {
+				var headRow = document.createElement("tr");
+				
+				headRow.appendChild(document.createElement("td")); // empty placeholder for week number
+
+				// build td for each day
+				getDaysOfTheWeek().forEach ((item, index) => {
+					var dayTableData = document.createElement("td");
+					dayTableData.innerHTML = item;
+					
+					headRow.appendChild(dayTableData);
+				});
+				
+				headRow.appendChild(document.createElement("td")); // empty placeholder for week selector
+
+				// build the top level parent
+				var headRoot = document.createElement("thead");
+				headRoot.appendChild(headRow);
+				
+				return headRoot;
+			}
 			
+			function buildCalendarTableBody (calendarDiv) {
+				var tableBody = document.createElement("tbody");
+
+				for (var wIdx = 0; wIdx < 5; wIdx++) {
+					var tableRow = document.createElement("tr");
+				
+					var weekNumCell = document.createElement("td");
+					weekNumCell.innerHTML = "W" + wIdx;
+					
+					tableRow.appendChild(weekNumCell);
+					
+					for (var dIdx = 0; dIdx < 7; dIdx++) {
+						var dayNumCell = document.createElement("td");
+						dayNumCell.innerHTML = dIdx;
+						
+						tableRow.appendChild(dayNumCell);
+					}
+					
+					// append checkbox for week selection
+					var checkbox = document.createElement('input');
+					checkbox.type = "checkbox";
+					checkbox.name = "name";
+					checkbox.value = "value";
+					checkbox.id = "id";
+					
+					var cbCell = document.createElement("td");
+					cbCell.appendChild(checkbox);
+
+					tableRow.appendChild(cbCell);
+					
+					// after constructing the row, append it to the body
+					tableBody.appendChild(tableRow);
+				}
+				
+				// Build the last row which contains checkboxes for day selection
+				var checkboxRow = document.createElement("tr");
+				
+				checkboxRow.appendChild(document.createElement("td")); // append placeholder for week number
+				
+				for (var dIdx = 0; dIdx < 7; dIdx++) {
+					var checkbox = document.createElement('input');
+					checkbox.type = "checkbox";
+					checkbox.name = "name";
+					checkbox.value = "value";
+					checkbox.id = "id";
+				
+					var cbCell = document.createElement("td");
+					cbCell.appendChild(checkbox);
+					
+					checkboxRow.appendChild(cbCell);
+				}
+				
+				tableBody.appendChild(checkboxRow);
+				
+				return tableBody;
+			}
+			
+			var calendarDiv = document.getElementById("dtp_calendar");
+			calendarDiv.appendChild(buildCalendarTableHead(calendarDiv));
+			calendarDiv.appendChild(buildCalendarTableBody(calendarDiv));
         </script>
     </body>
 </html>
