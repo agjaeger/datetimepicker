@@ -72,7 +72,26 @@
 
 				return arr;
 			}
+
+			function indexOf (array, value, compareFn) {
+				for (var idx = 0; idx < array.length; idx++) {
+					if (compareFn(array[idx], value)) {
+						return idx;
+					}
+				}
+				
+				return -1;
+			}
 		
+			function compareTwoDates (dateA, dateB) {
+				if (dateA.getTime() === dateB.getTime()) {
+					return true;
+				}
+				
+				return false;
+			}
+		
+				
 			// check how many days in a month code from https://dzone.com/articles/determining-number-days-month
 			function daysInMonth(iMonth, iYear) {
 				return 32 - new Date(iYear, iMonth, 32).getDate();
@@ -202,7 +221,7 @@
 							dayCell.dataset.col = colIdx-1;
 							
 							dayCell.dataset.day = day.getDate();
-							dayCell.dataset.month = day.getMonth()+1;
+							dayCell.dataset.month = day.getMonth();
 							dayCell.dataset.year = day.getFullYear();
 							
 							dayCell.onclick = function () {
@@ -304,6 +323,9 @@
 				calendarDiv.appendChild(parent);
 				// --------------------------------------------------------
 				
+				// toggle all of the selected dates on
+				selectDates(selectedDates);
+				
 				return tableData;
 			}
 
@@ -313,15 +335,28 @@
 				var classQuery = ".day_cell";
 
 				var cell = document.querySelectorAll(classQuery + rowQuery + colQuery)[0];
+	
+				var cellDate = new Date(
+					cell.dataset.year,
+					cell.dataset.month,
+					cell.dataset.day,
+				);
 
 				if (cell.classList.toString().includes("selected_cell")) {
 					cell.classList.remove("selected_cell");
-					selectedArray[rowIdx][colIdx] = 0;
+					
+					var index = indexOf(selectedDates, cellDate, compareTwoDates);
+					if (index > -1) {
+						selectedDates.splice(index, 1);
+					}
 				} else {
 					cell.classList.add("selected_cell");
-					selectedArray[rowIdx][colIdx]++;
+					
+					if (indexOf(selectedDates, cellDate, compareTwoDates) === -1) {
+						selectedDates.push(cellDate);
+					}
 				}
-				
+
 				return [cell];
 			}
 			
@@ -332,17 +367,27 @@
 				var cells = document.querySelectorAll(classQuery + colQuery);
 				
 				for (var cellIdx = 0; cellIdx < cells.length; cellIdx++) {
-					var cellRow = cells[cellIdx].dataset.row;
+					var cell = cells[cellIdx];
 					
-					if (cells[cellIdx].classList.toString().includes("selected_cell")) {
-						if (selectedArray[cellRow][colIdx] == 0) {
-							cells[cellIdx].classList.remove("selected_cell");
-						} else {
-							selectedArray[cellRow][colIdx]--;
+					var cellDate = new Date(
+						cell.dataset.year,
+						cell.dataset.month,
+						cell.dataset.day
+					);
+					
+					if (cell.classList.toString().includes("selected_cell")) {
+						cell.classList.remove("selected_cell");
+						
+						var index = indexOf(selectedDates, cellDate, compareTwoDates);
+						if (index > -1) {
+							selectedDates.splice(index, 1);
 						}
 					} else {
-						cells[cellIdx].classList.add("selected_cell");
-						selectedArray[cellRow][colIdx]++;
+						cell.classList.add("selected_cell");
+						
+						if (indexOf(selectedDates, cellDate, compareTwoDates) === -1) {
+							selectedDates.push(cellDate);
+						}
 					}
 				}
 
@@ -356,21 +401,49 @@
 				var cells = document.querySelectorAll(classQuery + rowQuery);
 
 				for (var cellIdx = 0; cellIdx < cells.length; cellIdx++) {
-					var cellCol = cells[cellIdx].dataset.col;
+					var cell = cells[cellIdx];
 
-					if (cells[cellIdx].classList.toString().includes("selected_cell")) {					
-						if (selectedArray[rowIdx][cellCol] == 0) {
-							cells[cellIdx].classList.remove("selected_cell");
-						} else {
-							selectedArray[rowIdx][cellCol]--;
-						}						
+					var cellDate = new Date(
+						cell.dataset.year,
+						cell.dataset.month,
+						cell.dataset.day
+					);
+
+					if (cell.classList.toString().includes("selected_cell")) {					
+						cell.classList.remove("selected_cell");
+
+						var index = indexOf(selectedDates, cellDate, compareTwoDates);
+						console.log(index);
+						if (index > -1) {
+							selectedDates.splice(index, 1);
+						}
 					} else {
-						cells[cellIdx].classList.add("selected_cell");
-						selectedArray[rowIdx][cellCol]++;
+						cell.classList.add("selected_cell");
+						
+						if (indexOf(selectedDates, cellDate, compareTwoDates) === -1) {
+							selectedDates.push(cellDate);
+						}
 					}
 				}
-
+				
+				console.log(selectedDates);
 				return cells;
+			}
+			
+			function selectDates (dateArray) {
+				for (var idx = 0; idx < dateArray.length; idx++) {
+					var dayQuery = "[data-day='" + dateArray[idx].getDate() + "']";
+					var monthQuery = "[data-month='" + dateArray[idx].getMonth() + "']";
+					var yearQuery = "[data-year='" + dateArray[idx].getFullYear() + "']";
+
+					var dayCell = document.querySelectorAll(dayQuery + monthQuery + yearQuery)[0];
+					
+					if (typeof dayCell !== "undefined") {
+						if (!(dayCell.classList.toString().includes("selected_cell"))) {					
+							dayCell.classList.add("selected_cell");
+						}
+					}
+				}
 			}
 			
 			// 5 rows, 8 columns (1 for week num, 7 for dotw)
@@ -378,7 +451,7 @@
 			var numCols = 8;
 			
 			// selectedArray maintains a count of the # times a cell is toggled
-			var selectedArray = createArray(numRows, numCols-1); // dont need to worry about weeknum col
+			var selectedDates = [];
 			// tableArray maintains the table data
 			var tableArray = createArray(numRows, numCols);
         </script>
@@ -389,7 +462,7 @@
 			var maxDate = new Date(2019, 10);
 
 			showCalendar(curDate);
-		
+
 			function onCellClick (cellIdx, isWeekSelectionToggle, isDaySelectionToggle) {
 				var changedCells = [];
 			
