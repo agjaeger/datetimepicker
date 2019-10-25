@@ -251,11 +251,33 @@
 				var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 				
 				var leftArrow = document.createElement("button");
+				leftArrow.id = "leftArrowSelector";
 				leftArrow.innerHTML = "<";
-
+				leftArrow.onclick = function () {
+					curMonth -= 1;
+					
+					if (curMonth < 1) {
+						curMonth = 12;
+						curYear -= 1;
+					}
+					
+					showCalendar(curMonth, curYear);
+				};
+				
 				var rightArrow = document.createElement("button");
+				rightArrow.id = "rightArrowSelector";
 				rightArrow.innerHTML = ">";
-
+				rightArrow.onclick = function () {
+					curMonth += 1;
+					
+					if (curMonth > 12) {
+						curMonth = 1;
+						curYear += 1;
+					}
+					
+					showCalendar(curMonth, curYear);
+				};
+				
 				var title = document.createElement("span");
 				title.innerHTML = months[month] + "&emsp;" + year;
 				
@@ -361,13 +383,16 @@
 			// 5 rows, 8 columns (1 for week num, 7 for dotw)
 			var numRows = 5; 
 			var numCols = 8;
-
+			
 			// selectedArray maintains a count of the # times a cell is toggled
 			var selectedArray = createArray(numRows, numCols-1); // dont need to worry about weeknum col
 			// tableArray maintains the table data
 			var tableArray = createArray(numRows, numCols);
 
-			showCalendar(10, 2019);
+			var curMonth = 10;
+			var curYear = 2019;
+
+			showCalendar(curMonth, curYear);
         </script>
 
 		<script>
