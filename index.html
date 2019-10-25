@@ -22,8 +22,7 @@
 				border: 1px solid #ddd;
 				text-align: center;
 				
-				width: 30px;
-				height: 30px;
+
 				
 				-webkit-touch-callout: none; /* iOS Safari */
 				-webkit-user-select: none; /* Safari */
@@ -32,12 +31,45 @@
 					-ms-user-select: none; /* Internet Explorer/Edge */
 						user-select: none; /* Non-prefixed version, currently supported by Chrome and Opera */
 			};
+						
+			#dtp_calendar > tbody > td > div {
+				
+			}
 			
-			#dtp_calendar td input {
-				width: 30px;
-				height: 30px;
-			};
+			.tablecell  {
+				padding: 0px;
+				
+				width: 35px;
+				height: 35px;
+			}
 			
+			.tablecell > div {
+				/* part 1 of 2: helps put child tag in the center */
+				/* change width and height to any percentage */
+				
+				display: table;
+				width: 100%;
+				height: 100%;
+				text-align: center;
+				
+				margin: auto;
+			}
+			
+			.tablecell > div > span {
+				/* part 2 of 2: helps put child tag in the center */
+				display: table-cell;
+				vertical-align: middle;
+			}
+			
+			
+			.selected_cell {
+				background-color: lightblue;
+				// background color of the table cell
+				-webkit-box-shadow: inset 0 0 3px 3px dodgerblue;
+						box-shadow: inset 0 0 3px 3px dodgerblue;
+						
+				margin: -2px;
+			}
 		</style>
     </head>
 
@@ -45,14 +77,25 @@
 		<div id="dtp_calendar"></div>
 		
 		<script>
-			function onCellClick (id, isWeekSelectionToggle, isDaySelectionToggle) {
-				console.log("Hello world", id);
+			function onCellClick (cell, isWeekSelectionToggle, isDaySelectionToggle) {
+				console.log("Hello world", cell);
 			}
-			
-		
 		</script>
 		
         <script>
+			// creates an n-dimensional array createArray(length...)
+			function createArray(length) {
+				var arr = new Array(length || 0),
+					i = length;
+
+				if (arguments.length > 1) {
+					var args = Array.prototype.slice.call(arguments, 1);
+					while(i--) arr[length-1 - i] = createArray.apply(this, args);
+				}
+
+				return arr;
+			}
+		
 			// check how many days in a month code from https://dzone.com/articles/determining-number-days-month
 			function daysInMonth(iMonth, iYear) {
 				return 32 - new Date(iYear, iMonth, 32).getDate();
@@ -76,18 +119,67 @@
 				];
 			}
 
+			function buildCalendarArray (month, year) {
+				// 5 rows, 8 columns (1 for week num, 7 for dotw)
+				var numRows = 5; 
+				var numCols = 8;
+				
+				var tableArray = createArray(numRows, numCols);
+				
+				// prepare some metadata about the given month and year
+				var d = new Date(year, month);
+			    let firstDay = d.getDay();
+			    let firstWeek = getWeek(d);
 
-			function buildCalendarTableHead (calendarDiv) {
+				var dayCounter = 1;
+				var numDaysInMonth = daysInMonth(month, year);
+				
+				// loop over each element in the table array
+				for (var rowIdx = 0; rowIdx < numRows; rowIdx++) {
+					tableArray[rowIdx][0] = firstWeek + rowIdx;
+					
+					for (var colIdx = 1; colIdx < numCols; colIdx++) {
+						if (rowIdx === 0 && colIdx <= firstDay) {
+							// if cell is before the current month ?? intuitively < makes sense not <=
+							tableArray[rowIdx][colIdx] = "";
+						} else if (dayCounter > numDaysInMonth) {
+							// if cell is after the current month
+							tableArray[rowIdx][colIdx] = "";
+						} else {
+							tableArray[rowIdx][colIdx] = new Date(year, month, dayCounter);
+							dayCounter++;
+						}
+					}
+				}
+
+				return {
+					data: tableArray,
+					rows: numRows,
+					cols: numCols
+				};
+			}
+
+			function buildTableCell (innerHTML, id) {
+				var tableCell = document.createElement("td");
+				tableCell.className = "tablecell";
+				
+				if (id !== "") {
+					tableCell.id = id;
+				}
+				
+				tableCell.innerHTML = innerHTML;
+
+				return tableCell;
+			}
+
+			function buildCalendarTableHead () {
 				var headRow = document.createElement("tr");
 				
 				headRow.appendChild(document.createElement("td")); // empty placeholder for week number
 
 				// build td for each day
 				getDaysOfTheWeek().forEach ((item, index) => {
-					var dayTableData = document.createElement("td");
-					dayTableData.innerHTML = item;
-					
-					headRow.appendChild(dayTableData);
+					headRow.appendChild(buildTableCell(item, ""));
 				});
 				
 				headRow.appendChild(document.createElement("td")); // empty placeholder for week selector
@@ -99,74 +191,50 @@
 				return headRoot;
 			}
 			
-			function buildCalendarTableBody (calendarDiv) {
-				today = new Date();
-				currentMonth = today.getMonth();
-				currentYear = today.getFullYear();
-
-				var d = new Date(currentYear, currentMonth)
-			    let firstDay = d.getDay();
-			    let firstWeek = getWeek(d);
-
+			function buildCalendarTableBody (tableData) {
 				var tableBody = document.createElement("tbody");
-
-				var numDaysInMonth = daysInMonth(currentMonth, currentYear);
 				
-				var dayIdx = 1;
-				
-				for (var rowIdx = 0; rowIdx < 5; rowIdx++) {
+				for (var rowIdx = 0; rowIdx < tableData.rows; rowIdx++) {
 					var tableRow = document.createElement("tr");
-				
-					// build week row cell
-					var weekNumCell = document.createElement("td");
-					weekNumCell.innerHTML = (firstWeek + rowIdx);
-					tableRow.appendChild(weekNumCell);
+					tableRow.id = "week-" + rowIdx;
 					
-					// build day cells
-					for (var colIdx = 0; colIdx < 7; colIdx++) {
-						if (rowIdx === 0 && colIdx < firstDay) {
-							// if cell is before the current month
-							var dayNumCell = document.createElement("td");
-							tableRow.appendChild(dayNumCell);
-						} else if (dayIdx > numDaysInMonth) {
-							// if cell is after the current month
-							var dayNumCell = document.createElement("td");
-							tableRow.appendChild(dayNumCell);
-						} else {
-							var dayNumCell = document.createElement("td");
-							dayNumCell.id = dayIdx + "-" + currentMonth + "-" + currentYear;
-							dayNumCell.onclick = function () {
-								onCellClick(this.id, false, false);
+					// week idx
+					tableRow.appendChild(buildTableCell(tableData.data[rowIdx][0], "week-" + rowIdx));	
+					
+					for (var colIdx = 1; colIdx < tableData.cols; colIdx++) {
+						if (tableData.data[rowIdx][colIdx] === "") {
+							tableRow.appendChild(buildTableCell("", ""));	
+						} else {  
+							var dayLabel = new Date(tableData.data[rowIdx][colIdx]).getDate();
+							var dayCell = buildTableCell(dayLabel, "");
+							dayCell.className += " day_cell " + ("dotw-" + (colIdx-1));
+							
+							dayCell.onclick = function () {
+								onCellClick(this, false, true);
 							};
 							
-							dayNumCell.innerHTML = dayIdx;					
-							tableRow.appendChild(dayNumCell);
-							
-							dayIdx++;
+							tableRow.appendChild(dayCell);	
 						}
 					}
 					
-					// append checkbox for week selection
-					var weekSelectionToggleCell = document.createElement("td");
-					weekSelectionToggleCell.id = "week-"+rowIdx;
+					// append checkbox for week selection					
+					var weekSelectionToggleCell = buildTableCell("", "week-"+rowIdx);
 					weekSelectionToggleCell.onclick = function () {
 						onCellClick(this.id, true, false);
 					};
 
 					tableRow.appendChild(weekSelectionToggleCell);
-					
+
 					// after constructing the row, append it to the body
 					tableBody.appendChild(tableRow);
 				}
 				
 				// Build the last row which contains checkboxes for day selection
 				var checkboxRow = document.createElement("tr");
-				
-				checkboxRow.appendChild(document.createElement("td")); // append placeholder for week number
+				checkboxRow.appendChild(buildTableCell("", "")); // append placeholder for week number
 				
 				for (var dIdx = 0; dIdx < 7; dIdx++) {
-					var daySelectionToggleCell = document.createElement("td");
-					daySelectionToggleCell.id = "dotw-"+dIdx;
+					var daySelectionToggleCell = buildTableCell("", "dotw-"+dIdx);
 					daySelectionToggleCell.onclick = function () {
 						onCellClick(this.id, false, true);
 					};
@@ -175,13 +243,36 @@
 				}
 				
 				tableBody.appendChild(checkboxRow);
-				
+
 				return tableBody;
 			}
 			
-			var calendarDiv = document.getElementById("dtp_calendar");
-			calendarDiv.appendChild(buildCalendarTableHead(calendarDiv));
-			calendarDiv.appendChild(buildCalendarTableBody(calendarDiv));
+			function showCalendar (month, year) {
+				// month [1, 12] year (eg. 2019)
+				var calendarDiv = document.getElementById("dtp_calendar");
+				calendarDiv.innerHTML = "";
+				
+				var tableData = buildCalendarArray(month-1, year);
+
+				calendarDiv.appendChild(buildCalendarTableHead());
+				calendarDiv.appendChild(buildCalendarTableBody(tableData));
+				
+				return tableData;
+			}
+			
+			function sleep (time) {
+				return new Promise((resolve) => setTimeout(resolve, time));
+			}
+			
+			showCalendar(10, 2019);
+			
+			sleep(5000).then(() => {
+				showCalendar(11, 2019);
+			});
+			
+			sleep(10000).then(() => {
+				showCalendar(12, 2019);
+			});
         </script>
     </body>
 </html>
