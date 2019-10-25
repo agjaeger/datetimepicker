@@ -220,39 +220,56 @@
 				return tableBody;
 			}
 
-			function buildCalendarHeader (month, year) {
+			function buildCalendarHeader () {
 				var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 				var leftArrow = document.createElement("button");
 				leftArrow.id = "leftArrowSelector";
 				leftArrow.innerHTML = "<";
+				
+				if (curDate <= minDate) {
+					leftArrow.style.visibility = "hidden";
+				}
+				
 				leftArrow.onclick = function () {
-					curMonth -= 1;
+					var curMonth = curDate.getMonth();
+					var curYear = curDate.getFullYear();
 					
+					curMonth -= 1;
+
 					if (curMonth < 0) {
 						curMonth = 11;
 						curYear -= 1;
 					}
-					
-					showCalendar(curMonth, curYear);
+
+					curDate = new Date(curYear, curMonth);;
+					showCalendar(curDate);
 				};
 				
 				var rightArrow = document.createElement("button");
 				rightArrow.id = "rightArrowSelector";
 				rightArrow.innerHTML = ">";
 				rightArrow.onclick = function () {
+					var curMonth = curDate.getMonth();
+					var curYear = curDate.getFullYear();
+					
 					curMonth += 1;
 					
 					if (curMonth > 11) {
 						curMonth = 0;
 						curYear += 1;
 					}
-					
-					showCalendar(curMonth, curYear);
+
+					curDate = new Date(curYear, curMonth);
+					showCalendar(curDate);
 				};
 				
+				if (curDate >= maxDate) {
+					rightArrow.style.visibility = "hidden";
+				}
+				
 				var title = document.createElement("span");
-				title.innerHTML = months[month] + "&emsp;" + year;
+				title.innerHTML = months[curDate.getMonth()] + "&emsp;" + curDate.getFullYear();
 				title.classList.add("noselect");
 				
 				var headerParent = document.createElement("div");
@@ -265,17 +282,17 @@
 				return headerParent;
 			}
 
-			function showCalendar (month, year) {
+			function showCalendar (curDate) {
 				// month [1, 12] year (eg. 2019)
 				var calendarDiv = document.getElementById("dtp_calendar");
 				calendarDiv.innerHTML = "";
 
-				var tableData = buildCalendarArray(month, year);
+				var tableData = buildCalendarArray(curDate.getMonth(), curDate.getFullYear());
 
 				// --------------------------------------------------------
 				var parent = document.createElement("div");
 
-				parent.appendChild(buildCalendarHeader(month, year));
+				parent.appendChild(buildCalendarHeader());
 				
 				var tableParent = document.createElement("table");
 				tableParent.rules="groups";
@@ -364,14 +381,15 @@
 			var selectedArray = createArray(numRows, numCols-1); // dont need to worry about weeknum col
 			// tableArray maintains the table data
 			var tableArray = createArray(numRows, numCols);
-
-			var curMonth = 9;
-			var curYear = 2019;
-
-			showCalendar(curMonth, curYear);
         </script>
 
 		<script>
+			var curDate = new Date(2019, 9);
+			var minDate = new Date(2019, 8);
+			var maxDate = new Date(2019, 10);
+
+			showCalendar(curDate);
+		
 			function onCellClick (cellIdx, isWeekSelectionToggle, isDaySelectionToggle) {
 				var changedCells = [];
 			
