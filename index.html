@@ -173,7 +173,15 @@
 
 				// build td for each day
 				getDaysOfTheWeek().forEach ((item, index) => {
-					headRow.appendChild(buildTableCell(item, ""));
+					var dotwCell = buildTableCell(item, "");
+					
+					dotwCell.dataset.row = 0;
+					dotwCell.dataset.col = index;
+					dotwCell.onclick = function () {
+						onCellClick([this.dataset.row, this.dataset.col], false, true);
+					};
+
+					headRow.appendChild(dotwCell);
 				});
 
 				// build the top level parent
@@ -224,23 +232,6 @@
 					// after constructing the row, append it to the body
 					tableBody.appendChild(tableRow);
 				}
-				
-				// Build the last row which contains checkboxes for day selection
-				var checkboxRow = document.createElement("tr");
-				checkboxRow.appendChild(buildTableCell("", "")); // append placeholder for week number
-				
-				for (var dIdx = 0; dIdx < 7; dIdx++) {
-					var daySelectionToggleCell = buildTableCell("", "dotw-"+dIdx);
-					daySelectionToggleCell.dataset.row = 0;
-					daySelectionToggleCell.dataset.col = dIdx;
-					daySelectionToggleCell.onclick = function () {
-						onCellClick([this.dataset.row, this.dataset.col], false, true);
-					};
-					
-					checkboxRow.appendChild(daySelectionToggleCell);
-				}
-				
-				tableBody.appendChild(checkboxRow);
 
 				return tableBody;
 			}
@@ -262,7 +253,15 @@
 				var rowElement = document.getElementById("week-" + rowIdx);
 				var colElements = rowElement.getElementsByClassName("dotw-" + colIdx);
 				
-				console.log(colElements);
+				if (colElements.length > 1) {
+					console.error("More than one element with", ("week-"+rowIdx), "and", ("dotw-" + colIdx), "!");
+				}
+
+				if (colElements[0].classList.toString().includes("selected_cell")) {
+					colElements[0].classList.remove("selected_cell");
+				} else {
+					colElements[0].classList.add("selected_cell");
+				}
 			}
 			
 			function toggleCol (colIdx) {
