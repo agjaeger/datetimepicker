@@ -8,7 +8,7 @@
         <link rel="stylesheet" type="text/css" href="jquery.datetimepicker.css"/>
 
 
-		<style>
+		<style>		
 			.noselect {
 			  -webkit-touch-callout: none; /* iOS Safari */
 				-webkit-user-select: none; /* Safari */
@@ -18,22 +18,29 @@
 						user-select: none; /* Non-prefixed version, currently supported by Chrome and Opera */
 			}
 
+			#dtp_calendar {
+				display:inline-block;
+			}
+
 			#dtp_calendar td {
 				border: 1px solid #ddd;
 				text-align: center;
-				
 
-				
 				-webkit-touch-callout: none; /* iOS Safari */
 				-webkit-user-select: none; /* Safari */
 				 -khtml-user-select: none; /* Konqueror HTML */
 				   -moz-user-select: none; /* Firefox */
 					-ms-user-select: none; /* Internet Explorer/Edge */
 						user-select: none; /* Non-prefixed version, currently supported by Chrome and Opera */
-			};
-						
-			#dtp_calendar > tbody > td > div {
-				
+			}
+			
+			#dtp_header {
+				display: flex;                  /* establish flex container */
+				flex-direction: row;            /* default value; can be omitted */
+				flex-wrap: nowrap;              /* default value; can be omitted */
+				justify-content: space-between; /* switched from default (flex-start, see below) */
+
+				background-color: #F8F8FF ;
 			}
 			
 			.table_cell  {
@@ -240,15 +247,47 @@
 				return tableBody;
 			}
 
+			function buildCalendarHeader (month, year) {
+				var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+				
+				var leftArrow = document.createElement("button");
+				leftArrow.innerHTML = "<";
+
+				var rightArrow = document.createElement("button");
+				rightArrow.innerHTML = ">";
+
+				var title = document.createElement("span");
+				title.innerHTML = months[month] + "&emsp;" + year;
+				
+				var headerParent = document.createElement("div");
+				headerParent.id = "dtp_header";
+				
+				headerParent.appendChild(leftArrow);
+				headerParent.appendChild(title);
+				headerParent.appendChild(rightArrow);
+				
+				return headerParent;
+			}
+
 			function showCalendar (month, year) {
 				// month [1, 12] year (eg. 2019)
 				var calendarDiv = document.getElementById("dtp_calendar");
 				calendarDiv.innerHTML = "";
-				
+
 				var tableData = buildCalendarArray(month-1, year);
 
-				calendarDiv.appendChild(buildCalendarTableHead());
-				calendarDiv.appendChild(buildCalendarTableBody(tableData));
+				// --------------------------------------------------------
+				var parent = document.createElement("div");
+
+				parent.appendChild(buildCalendarHeader(month-1, year));
+				
+				var tableParent = document.createElement("table");
+				tableParent.appendChild(buildCalendarTableHead());
+				tableParent.appendChild(buildCalendarTableBody(tableData));
+				parent.appendChild(tableParent);
+				
+				calendarDiv.appendChild(parent);
+				// --------------------------------------------------------
 				
 				return tableData;
 			}
@@ -291,8 +330,7 @@
 						selectedArray[cellRow][colIdx]++;
 					}
 				}
-				
-				console.log(selectedArray);
+
 				return cells;
 			}
 			
@@ -316,8 +354,7 @@
 						selectedArray[rowIdx][cellCol]++;
 					}
 				}
-				
-				console.log(selectedArray);
+
 				return cells;
 			}
 			
