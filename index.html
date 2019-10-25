@@ -40,7 +40,6 @@
 			
 			.table_cell  {
 				padding: 0px;
-				
 				width: 35px;
 				height: 35px;
 			}
@@ -151,13 +150,16 @@
 
 				// build td for each day
 				getDaysOfTheWeek().forEach ((item, index) => {
-					var dotwCell = buildTableCell(item, "");
+					var dotwCell = buildTableCell("", "");
 					
 					dotwCell.dataset.row = -1;
 					dotwCell.dataset.col = index;
 					dotwCell.onclick = function () {
 						onCellClick([this.dataset.row, this.dataset.col], false, true);
 					};
+
+					dotwCell.innerHTML = "<b>" + item + "</b>";
+
 
 					headRow.appendChild(dotwCell);
 				});
@@ -177,10 +179,10 @@
 					tableRow.id = "week-" + rowIdx;
 					
 					// week idx
-					var weekIdxCell = buildTableCell(tableData.data[rowIdx][0], "week-" + rowIdx);
+					var weekIdxCell = buildTableCell("", "week-" + rowIdx);
 					weekIdxCell.dataset.row = rowIdx;
 					weekIdxCell.dataset.col = -1;
-					
+					weekIdxCell.innerHTML = "<b>" + tableData.data[rowIdx][0] + "</b>";
 					weekIdxCell.onclick = function () {
 						onCellClick([this.dataset.row, this.dataset.col], true, false);
 					};
