@@ -20,10 +20,13 @@
 
 			#dtp_calendar {
 				display:inline-block;
+				
+				border: 1px solid #ddd;
+				border-top-style: none;
 			}
 
+
 			#dtp_calendar td {
-				border: 1px solid #ddd;
 				text-align: center;
 
 				-webkit-touch-callout: none; /* iOS Safari */
@@ -71,9 +74,6 @@
 			
 			.selected_cell {
 				background-color: lightblue;
-				// background color of the table cell
-				-webkit-box-shadow: inset 0 0 3px 3px dodgerblue;
-						box-shadow: inset 0 0 3px 3px dodgerblue;
 						
 				margin: -2px;
 			}
@@ -304,6 +304,8 @@
 				parent.appendChild(buildCalendarHeader(month-1, year));
 				
 				var tableParent = document.createElement("table");
+				tableParent.rules="groups";
+				
 				tableParent.appendChild(buildCalendarTableHead());
 				tableParent.appendChild(buildCalendarTableBody(tableData));
 				parent.appendChild(tableParent);
