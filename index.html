@@ -79,12 +79,18 @@
         <script>
 			// creates an n-dimensional array createArray(length...)
 			function createArray(length) {
-				var arr = new Array(length || 0),
-					i = length;
+				var arr = new Array(length || 0);
+				var i = length;
+
+				for (var i = 0; i < length; i++) {
+					arr[i] = 0;
+				}
 
 				if (arguments.length > 1) {
 					var args = Array.prototype.slice.call(arguments, 1);
-					while(i--) arr[length-1 - i] = createArray.apply(this, args);
+					while (i--) {
+						arr[length-1 - i] = createArray.apply(this, args);
+					}
 				}
 
 				return arr;
@@ -113,13 +119,7 @@
 				];
 			}
 
-			function buildCalendarArray (month, year) {
-				// 5 rows, 8 columns (1 for week num, 7 for dotw)
-				var numRows = 5; 
-				var numCols = 8;
-				
-				var tableArray = createArray(numRows, numCols);
-				
+			function buildCalendarArray (month, year) {				
 				// prepare some metadata about the given month and year
 				var d = new Date(year, month);
 			    let firstDay = d.getDay();
@@ -252,7 +252,7 @@
 				
 				return tableData;
 			}
-			
+						
 			function toggleCell (rowIdx, colIdx) {
 				var rowQuery = "[data-row='" + rowIdx + "']";
 				var colQuery = "[data-col='" + colIdx + "']";
@@ -262,9 +262,13 @@
 
 				if (cell.classList.toString().includes("selected_cell")) {
 					cell.classList.remove("selected_cell");
+					selectedArray[rowIdx][colIdx] = 0;
 				} else {
 					cell.classList.add("selected_cell");
+					selectedArray[rowIdx][colIdx]++;
 				}
+				
+				return [cell];
 			}
 			
 			function toggleCol (colIdx) {
@@ -274,12 +278,22 @@
 				var cells = document.querySelectorAll(classQuery + colQuery);
 				
 				for (var cellIdx = 0; cellIdx < cells.length; cellIdx++) {
+					var cellRow = cells[cellIdx].dataset.row;
+					
 					if (cells[cellIdx].classList.toString().includes("selected_cell")) {
-						cells[cellIdx].classList.remove("selected_cell");
+						if (selectedArray[cellRow][colIdx] == 0) {
+							cells[cellIdx].classList.remove("selected_cell");
+						} else {
+							selectedArray[cellRow][colIdx]--;
+						}
 					} else {
 						cells[cellIdx].classList.add("selected_cell");
+						selectedArray[cellRow][colIdx]++;
 					}
 				}
+				
+				console.log(selectedArray);
+				return cells;
 			}
 			
 			function toggleRow (rowIdx) {
@@ -287,36 +301,51 @@
 				var classQuery = ".day_cell";
 
 				var cells = document.querySelectorAll(classQuery + rowQuery);
-				
+
 				for (var cellIdx = 0; cellIdx < cells.length; cellIdx++) {
-					if (cells[cellIdx].classList.toString().includes("selected_cell")) {
-						cells[cellIdx].classList.remove("selected_cell");
+					var cellCol = cells[cellIdx].dataset.col;
+
+					if (cells[cellIdx].classList.toString().includes("selected_cell")) {					
+						if (selectedArray[rowIdx][cellCol] == 0) {
+							cells[cellIdx].classList.remove("selected_cell");
+						} else {
+							selectedArray[rowIdx][cellCol]--;
+						}						
 					} else {
 						cells[cellIdx].classList.add("selected_cell");
+						selectedArray[rowIdx][cellCol]++;
 					}
 				}
+				
+				console.log(selectedArray);
+				return cells;
 			}
 			
-			function sleep (time) {
-				return new Promise((resolve) => setTimeout(resolve, time));
-			}
-			
+			// 5 rows, 8 columns (1 for week num, 7 for dotw)
+			var numRows = 5; 
+			var numCols = 8;
+
+			// selectedArray maintains a count of the # times a cell is toggled
+			var selectedArray = createArray(numRows, numCols-1); // dont need to worry about weeknum col
+			// tableArray maintains the table data
+			var tableArray = createArray(numRows, numCols);
+
 			showCalendar(10, 2019);
         </script>
 
 		<script>
 			function onCellClick (cellIdx, isWeekSelectionToggle, isDaySelectionToggle) {
+				var changedCells = [];
+			
 				if (isWeekSelectionToggle) {
-					toggleRow(cellIdx[0]);
-				}
-
-				else if (isDaySelectionToggle) {
-					toggleCol(cellIdx[1]);
+					changedCells = toggleRow(cellIdx[0]);
+				} else if (isDaySelectionToggle) {
+					changedCells = toggleCol(cellIdx[1]);
+				} else {
+					changedCells = toggleCell(cellIdx[0], cellIdx[1]);
 				}
 				
-				else {
-					toggleCell(cellIdx[0], cellIdx[1]);
-				}
+				//console.log(changedCells);
 			}
 		</script>
     </body>
