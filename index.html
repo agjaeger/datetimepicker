@@ -36,14 +36,14 @@
 				
 			}
 			
-			.tablecell  {
+			.table_cell  {
 				padding: 0px;
 				
 				width: 35px;
 				height: 35px;
 			}
 			
-			.tablecell > div {
+			.table_cell > div {
 				/* part 1 of 2: helps put child tag in the center */
 				/* change width and height to any percentage */
 				
@@ -55,7 +55,7 @@
 				margin: auto;
 			}
 			
-			.tablecell > div > span {
+			.table_cell > div > span {
 				/* part 2 of 2: helps put child tag in the center */
 				display: table-cell;
 				vertical-align: middle;
@@ -155,7 +155,7 @@
 
 			function buildTableCell (innerHTML, id) {
 				var tableCell = document.createElement("td");
-				tableCell.className = "tablecell";
+				tableCell.className = "table_cell";
 				
 				if (id !== "") {
 					tableCell.id = id;
@@ -175,7 +175,7 @@
 				getDaysOfTheWeek().forEach ((item, index) => {
 					var dotwCell = buildTableCell(item, "");
 					
-					dotwCell.dataset.row = 0;
+					dotwCell.dataset.row = -1;
 					dotwCell.dataset.col = index;
 					dotwCell.onclick = function () {
 						onCellClick([this.dataset.row, this.dataset.col], false, true);
@@ -201,7 +201,7 @@
 					// week idx
 					var weekIdxCell = buildTableCell(tableData.data[rowIdx][0], "week-" + rowIdx);
 					weekIdxCell.dataset.row = rowIdx;
-					weekIdxCell.dataset.col = 0;
+					weekIdxCell.dataset.col = -1;
 					
 					weekIdxCell.onclick = function () {
 						onCellClick([this.dataset.row, this.dataset.col], true, false);
@@ -213,13 +213,17 @@
 						if (tableData.data[rowIdx][colIdx] === "") {
 							tableRow.appendChild(buildTableCell("", ""));	
 						} else {  
-							var dayLabel = new Date(tableData.data[rowIdx][colIdx]).getDate();
-							var dayCell = buildTableCell(dayLabel, "");
+							var day = new Date(tableData.data[rowIdx][colIdx]);
+							var dayCell = buildTableCell(day.getDate(), "");
 							
-							dayCell.className += " day_cell " + ("dotw-" + (colIdx-1));
+							dayCell.classList.add("day_cell");
 							
 							dayCell.dataset.row = rowIdx;
 							dayCell.dataset.col = colIdx-1;
+							
+							dayCell.dataset.day = day.getDate();
+							dayCell.dataset.month = day.getMonth()+1;
+							dayCell.dataset.year = day.getFullYear();
 							
 							dayCell.onclick = function () {
 								onCellClick([this.dataset.row, this.dataset.col], false, false);
@@ -250,41 +254,45 @@
 			}
 			
 			function toggleCell (rowIdx, colIdx) {
-				var rowElement = document.getElementById("week-" + rowIdx);
-				var colElements = rowElement.getElementsByClassName("dotw-" + colIdx);
-				
-				if (colElements.length > 1) {
-					console.error("More than one element with", ("week-"+rowIdx), "and", ("dotw-" + colIdx), "!");
-				}
+				var rowQuery = "[data-row='" + rowIdx + "']";
+				var colQuery = "[data-col='" + colIdx + "']";
+				var classQuery = ".day_cell";
 
-				if (colElements[0].classList.toString().includes("selected_cell")) {
-					colElements[0].classList.remove("selected_cell");
+				var cell = document.querySelectorAll(classQuery + rowQuery + colQuery)[0];
+
+				if (cell.classList.toString().includes("selected_cell")) {
+					cell.classList.remove("selected_cell");
 				} else {
-					colElements[0].classList.add("selected_cell");
+					cell.classList.add("selected_cell");
 				}
 			}
 			
 			function toggleCol (colIdx) {
-				var colElements = document.getElementsByClassName("dotw-" + colIdx);
+				var colQuery = "[data-col='" + colIdx + "']";
+				var classQuery = ".day_cell";
+
+				var cells = document.querySelectorAll(classQuery + colQuery);
 				
-				for (var colIdx = 0; colIdx < colElements.length; colIdx++) {
-					if (colElements[colIdx].classList.toString().includes("selected_cell")) {
-						colElements[colIdx].classList.remove("selected_cell");
+				for (var cellIdx = 0; cellIdx < cells.length; cellIdx++) {
+					if (cells[cellIdx].classList.toString().includes("selected_cell")) {
+						cells[cellIdx].classList.remove("selected_cell");
 					} else {
-						colElements[colIdx].classList.add("selected_cell");
+						cells[cellIdx].classList.add("selected_cell");
 					}
 				}
 			}
 			
 			function toggleRow (rowIdx) {
-				var rowElement = document.getElementById("week-" + rowIdx);
-				var dayElements = rowElement.getElementsByClassName("day_cell");
+				var rowQuery = "[data-row='" + rowIdx + "']";
+				var classQuery = ".day_cell";
+
+				var cells = document.querySelectorAll(classQuery + rowQuery);
 				
-				for (var dayIdx = 0; dayIdx < dayElements.length; dayIdx++) {
-					if (dayElements[dayIdx].classList.toString().includes("selected_cell")) {
-						dayElements[dayIdx].classList.remove("selected_cell");
+				for (var cellIdx = 0; cellIdx < cells.length; cellIdx++) {
+					if (cells[cellIdx].classList.toString().includes("selected_cell")) {
+						cells[cellIdx].classList.remove("selected_cell");
 					} else {
-						dayElements[dayIdx].classList.add("selected_cell");
+						cells[cellIdx].classList.add("selected_cell");
 					}
 				}
 			}
@@ -294,14 +302,6 @@
 			}
 			
 			showCalendar(10, 2019);
-			
-			<!-- sleep(5000).then(() => { -->
-				<!-- showCalendar(11, 2019); -->
-			<!-- }); -->
-			
-			<!-- sleep(10000).then(() => { -->
-				<!-- showCalendar(12, 2019); -->
-			<!-- }); -->
         </script>
 
 		<script>
