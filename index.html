@@ -521,23 +521,6 @@
 			datepickerUtils.setMaxDate(new Date(2019, 10));
 			datepickerUtils.setMinDate(new Date(2019, 8));
 			datepickerUtils.showCalendar(new Date(2019, 9));
-
-			function onCellClick (cellIdx, isWeekSelectionToggle, isDaySelectionToggle) {
-				console.log(event.shiftKey);
-				
-				if (isWeekSelectionToggle) {
-					toggleRow(cellIdx[0]);
-					toggleRow(cellIdx[0]);
-				} else if (isDaySelectionToggle) {
-					toggleCol(cellIdx[1]);
-				} else {
-					toggleCell(cellIdx[0], cellIdx[1]);
-				}
-			}
-			
-			function onDOTWClicked () {
-			
-			}
 		</script>
     </body>
 </html>
