@@ -338,15 +338,31 @@
 
 					return calendarParent;
 				};
+				
+				this.getNumRows = function () {
+					return numRows;
+				};
+				
+				this.getNumCols = function () {
+					return numCols - 1;
+				}
+				
+				this.getNumColsFull = function () {
+					return numCols;
+				}
 			};
 			
 			var datepickerUtils = new function () {
-				var selectedDates = [];
-
 				var minDate = new Date(1970, 0);
 				var maxDate = new Date(2370, 0);
 				var curDate = minDate;
 
+				// ------------------------------------------------------------
+				// internal event callbacks
+
+				var selectedDates = [];
+				var previousSelectedCell = -1;
+				
 				var onGotoNextMonthPressed = function () {
 					/* Goes to the next month, handles rolling over to the next year */
 
@@ -377,7 +393,68 @@
 					}
 
 					datepickerUtils.showCalendar(new Date(year, month));
-				}
+				};
+
+				var onDayPressed = function () {					
+					if (event.shiftKey && previousSelectedCell !== -1 ) {
+						var comparePositions = function (posA, posB) {
+							return posA[0] === posB[0] && posA[1] === posB[1];
+						};
+						
+						var startPosition = [
+							Number(previousSelectedCell.dataset.row),
+							Number(previousSelectedCell.dataset.col)
+						];
+						
+						var endPosition = [
+							Number(this.dataset.row),
+							Number(this.dataset.col)
+						];
+							
+						var currentPosition = startPosition;
+						
+						while (!comparePositions(currentPosition, endPosition)) {
+							datepickerUtils.toggleCell(...currentPosition);
+							
+							var nextRow = currentPosition[0];
+							var nextCol = currentPosition[1] + 1;
+							
+							if (nextCol > datepickerFactory.getNumCols()-1) {
+								// not sure why -1 atm
+								nextRow += 1;
+								nextCol = 0;
+							}
+							
+							currentPosition[0] = nextRow;
+							currentPosition[1] = nextCol;
+							
+							if (currentPosition[0] > 5) {
+								break; // safety
+							}
+						}
+
+
+					} else {
+						handleCellToggle(this);
+					}
+					
+					previousSelectedCell = this;
+				};
+
+				var onWeekPresed = function () {
+					datepickerUtils.toggleRow(
+						this.dataset.row
+					);
+				};
+				
+				var onDOTWPressed = function () {
+					datepickerUtils.toggleColumn(
+						this.dataset.col
+					);
+				};
+
+				// ------------------------------------------------------------
+				// internal utilities
 
 				var handleCellToggle = function (dt_tdCell) {	
 					var cellDate = new Date(
@@ -420,35 +497,25 @@
 					// register on day clicked
 					var dayCells = document.getElementsByClassName("day_cell");
 					for (var idx = 0; idx < dayCells.length; idx++) {
-						dayCells[idx].addEventListener("click", function () {
-								handleCellToggle(this);
-							}
-						);
+						dayCells[idx].addEventListener("click", onDayPressed);
 					}
 					
 					// register on week clicked
 					var weekRows = document.getElementsByClassName("table_row_header");
 					for (var idx = 0; idx < weekRows.length; idx++) {
-						weekRows[idx].addEventListener("click", function () {
-								datepickerUtils.toggleRow(
-									this.dataset.row
-								);
-							}
-						);
+						weekRows[idx].addEventListener("click", onWeekPresed);
 					}
 					
 					// register on dotw clicked
 					var dotwCols = document.getElementsByClassName("table_col_header");
 					for (var idx = 0; idx < dotwCols.length; idx++) {
-						dotwCols[idx].addEventListener("click", function () {
-								datepickerUtils.toggleColumn(
-									this.dataset.col
-								);
-							}
-						);
+						dotwCols[idx].addEventListener("click", onDOTWPressed);
 					}
 				}
 
+				// ------------------------------------------------------------
+				// public api
+				
 				this.showCalendar = function (date) {
 					curDate = date;
 					
@@ -477,8 +544,11 @@
 					var colQuery = "[data-col='" + colIdx + "']";
 					var classQuery = ".day_cell";
 
-					var cell = document.querySelectorAll(classQuery + rowQuery + colQuery)[0];
-					handleCellToggle(cell);
+					var queryResults = document.querySelectorAll(classQuery + rowQuery + colQuery);
+					
+					if (queryResults.length === 1) {
+						handleCellToggle(queryResults[0]);
+					}
 				};
 				
 				this.toggleColumn = function  (colIdx) {
