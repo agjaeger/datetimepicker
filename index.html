@@ -70,10 +70,17 @@
 				border-radius: 50%;
 			}
 		</style>
-    </head>
+    
+		<style>
+			#tp_listParent {
+				
+			};
+		</style>
+	</head>
 
     <body>
-		<div id="dtp_calendar"></div>
+		<div id="dtp_datepicker"></div>
+		<div id="dtp_timepicker"></div>
 
         <script>
 			var jsUtils = new function () {
@@ -519,7 +526,7 @@
 				this.showCalendar = function (date) {
 					curDate = date;
 					
-					var calendarDiv = document.getElementById("dtp_calendar");
+					var calendarDiv = document.getElementById("dtp_datepicker");
 					
 					// push the calendar into the visible dom
 					calendarDiv.innerHTML = "";
@@ -585,12 +592,86 @@
 					}
 				};
 			}			
-        </script>
+        
+			var timepickerFactory = new function () {
+				var composeTimeString = function (hour, minute) {
+					var hrStr = hour.toString();
+					var minuteStr = minute.toString();
+					
+					if (hrStr.length != 2) {
+						hrStr = "0" + hrStr;
+					}
+					
+					if (minuteStr.length != 2) {
+						minuteStr = "0" + minuteStr;
+					}
+					
+					return hrStr + ":" + minuteStr;
+				}
+		
+				var buildTimeSelectionObject = function (increment) {
+					var times = [];
+					
+					if (increment === 0) {
+						console.error("Increment cannot be 0!");
+						return;
+					}
+					
+					if (60 % increment !== 0) {
+						console.error("Increment needs to be evenly divisible by 60!");
+						return;
+					}
+					
+					var stepsPerHour = Math.floor(60 / increment)
+					var numElements = 24 * stepsPerHour;
+
+					for (var counter = 0; counter < numElements; counter++) {
+						var minute = increment * (counter % stepsPerHour);
+						var hour = Math.floor(counter / stepsPerHour);
+						
+						times.push([hour, minute])
+					}
+					
+					return times;
+				}
+			
+				this.buildTimePicker = function (increment) {
+					var times = buildTimeSelectionObject(increment);
+				
+					var timeListParent = document.createElement("div");
+					timeListParent.id = "tp_listParent";
+					
+					for (var idx = 0; idx < times.length; idx++) {
+						var timeElement = document.createElement("div");
+						timeElement.innerHTML = composeTimeString(...times[idx]);
+						timeElement.dataset.hour = times[idx][0];
+						timeElement.dataset.minute = times[idx][1];
+						
+						timeListParent.appendChild(timeElement);
+					}
+					
+					return timeListParent;
+				};
+			};
+		
+			var timepickerUtils = new function () {
+				this.showTimePicker = function () {
+					var timepickerDiv = document.getElementById("dtp_timepicker");
+					
+					// push the calendar into the visible dom
+					timepickerDiv.innerHTML = "";
+					timepickerDiv.appendChild(timepickerFactory.buildTimePicker(5));
+				}
+			};
+		
+		</script>
 
 		<script>
-			datepickerUtils.setMaxDate(new Date(2019, 10));
-			datepickerUtils.setMinDate(new Date(2019, 8));
-			datepickerUtils.showCalendar(new Date(2019, 9));
+			<!-- datepickerUtils.setMaxDate(new Date(2019, 10)); -->
+			<!-- datepickerUtils.setMinDate(new Date(2019, 8)); -->
+			<!-- datepickerUtils.showCalendar(new Date(2019, 9)); -->
+			
+			timepickerUtils.showTimePicker(10);
 		</script>
     </body>
 </html>
