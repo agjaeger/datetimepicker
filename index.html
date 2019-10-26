@@ -76,426 +76,467 @@
 		<div id="dtp_calendar"></div>
 
         <script>
-			// creates an n-dimensional array createArray(length...)
-			function createArray(length) {
-				var arr = new Array(length || 0);
-				var i = length;
+			var jsUtils = new function () {
+				// creates an n-dimensional array createArray(length...)
+				this.createArray = function (length) {
+					var arr = new Array(length || 0);
+					var i = length;
 
-				for (var i = 0; i < length; i++) {
-					arr[i] = 0;
-				}
-
-				if (arguments.length > 1) {
-					var args = Array.prototype.slice.call(arguments, 1);
-					while (i--) {
-						arr[length-1 - i] = createArray.apply(this, args);
+					for (var i = 0; i < length; i++) {
+						arr[i] = 0;
 					}
-				}
 
-				return arr;
-			}
-
-			function indexOf (array, value, compareFn) {
-				for (var idx = 0; idx < array.length; idx++) {
-					if (compareFn(array[idx], value)) {
-						return idx;
+					if (arguments.length > 1) {
+						var args = Array.prototype.slice.call(arguments, 1);
+						while (i--) {
+							arr[length-1 - i] = jsUtils.createArray.apply(this, args);
+						}
 					}
-				}
+
+					return arr;
+				};
 				
-				return -1;
-			}
-		
-			function compareTwoDates (dateA, dateB) {
-				if (dateA.getTime() === dateB.getTime()) {
-					return true;
+				// a comparison function for an array of a list of objects
+				this.indexOf = function (array, value, compareFn) {
+					for (var idx = 0; idx < array.length; idx++) {
+						if (compareFn(array[idx], value)) {
+							return idx;
+						}
+					}
+					
+					return -1;
+				};
+			};
+			
+			var dateUtils = new function () {
+				this.daysInMonth = function (date) {
+					// check how many days in a month code from https://dzone.com/articles/determining-number-days-month
+					return 32 - new Date(date.getFullYear(), date.getMonth(), 32).getDate();
 				}
+			
+				this.compareTwoDates = function (dateA, dateB) {
+					if (dateA.getTime() === dateB.getTime()) {
+						return true;
+					}
+
+					return false;
+				};
 				
-				return false;
-			}
+				this.getWeek = function (date) {
+					// get week number adapted from https://stackoverflow.com/questions/7765767/show-week-number-with-javascript
+					var onejan = new Date(date.getFullYear(), 0, 4);
+					return Math.ceil((((date - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+				};
+				
+				this.getDaysOfTheWeek = function () {
+					return [
+						"Sun",
+						"Mon",
+						"Tue",
+						"Wed",
+						"Thu",
+						"Fri",
+						"Sat"
+					];
+				};
+			
+				this.getMonths = function () {
+					return [
+						"January", 
+						"February", 
+						"March", 
+						"April", 
+						"May", 
+						"June", 
+						"July", 
+						"August", 
+						"September", 
+						"October", 
+						"November", 
+						"December"
+					];
+				};
+			
+			};
+
+			var datepickerFactory = new function () {
+				// 5 rows, 8 columns (1 for week num, 7 for dotw)
+				var numRows = 6; 
+				var numCols = 8;
+
+				var buildTableCell = function (innerHTML, id) {
+					/* Helper function to build a table cell
+						note that it creates child div and p tags as well.
+						div tag is for background
+						p tag is for text
+					*/
+					
+					var tableCell = document.createElement("td");
+					tableCell.className = "table_cell";
+					tableCell.id = id;
+					
+					var tableCellDiv = document.createElement("div");
+					var tableCellP = document.createElement("p");
+					
+					tableCellP.innerHTML = innerHTML;
+				
+					tableCellDiv.appendChild(tableCellP);
+					tableCell.appendChild(tableCellDiv);
+					
+					return tableCell;
+				};
+
+				var buildTableObject = function (month, year) {
+					/*
+						Prepares a 2D matrix that models the body of the table.
+						E.G. the cells will contain the date or the week #.
+						Helps clean up the code in the table body generation
+					*/
+
+					var tableArray = jsUtils.createArray(numRows, numCols);
+					
+					// prepare some metadata about the given month and year
+					var date = new Date(year, month);
+
+					let firstDay = date.getDay();
+					let firstWeek = dateUtils.getWeek(date);
+
+					var dayCounter = 1;
+					var numDaysInMonth = dateUtils.daysInMonth(date);
+					
+					// loop over each element in the table array
+					for (var rowIdx = 0; rowIdx < numRows; rowIdx++) {
+						tableArray[rowIdx][0] = firstWeek + rowIdx;
 						
-			// check how many days in a month code from https://dzone.com/articles/determining-number-days-month
-			function daysInMonth(iMonth, iYear) {
-				return 32 - new Date(iYear, iMonth, 32).getDate();
-			}
-		
-			// get week number adapted from https://stackoverflow.com/questions/7765767/show-week-number-with-javascript
-			function getWeek (date) {
-				var onejan = new Date(date.getFullYear(), 0, 4);
-				return Math.ceil((((date - onejan) / 86400000) + onejan.getDay() + 1) / 7);
-			}
-		
-			function getDaysOfTheWeek () {
-				return [
-					"Sun",
-					"Mon",
-					"Tue",
-					"Wed",
-					"Thu",
-					"Fri",
-					"Sat"
-				];
-			}
-
-			function buildCalendarArray (month, year) {				
-				// prepare some metadata about the given month and year
-				var d = new Date(year, month);
-			    let firstDay = d.getDay();
-			    let firstWeek = getWeek(d);
-
-				var dayCounter = 1;
-				var numDaysInMonth = daysInMonth(month, year);
-				
-				// loop over each element in the table array
-				for (var rowIdx = 0; rowIdx < numRows; rowIdx++) {
-					tableArray[rowIdx][0] = firstWeek + rowIdx;
-					
-					for (var colIdx = 1; colIdx < numCols; colIdx++) {
-						if (rowIdx === 0 && colIdx <= firstDay) {
-							// if cell is before the current month ?? intuitively < makes sense not <=
-							tableArray[rowIdx][colIdx] = "";
-						} else if (dayCounter > numDaysInMonth) {
-							// if cell is after the current month
-							tableArray[rowIdx][colIdx] = "";
-						} else {
-							tableArray[rowIdx][colIdx] = new Date(year, month, dayCounter);
-							dayCounter++;
-						}
-					}
-				}
-
-				return {
-					data: tableArray,
-					rows: numRows,
-					cols: numCols
-				};
-			}
-
-			function buildTableCell (innerHTML, id) {
-				var tableCell = document.createElement("td");
-				tableCell.className = "table_cell";
-				tableCell.id = id;
-				
-				var tableCellDiv = document.createElement("div");
-				var tableCellP = document.createElement("p");
-				
-				tableCellP.innerHTML = innerHTML;
-			
-				tableCellDiv.appendChild(tableCellP);
-				tableCell.appendChild(tableCellDiv);
-				
-				return tableCell;
-			}
-
-			function buildCalendarTableHead () {
-				var headRow = document.createElement("tr");
-				
-				headRow.appendChild(document.createElement("td")); // empty placeholder for week number
-
-				// build td for each day
-				getDaysOfTheWeek().forEach ((item, index) => {
-					var dotwCell = buildTableCell("", "");
-					
-					dotwCell.dataset.row = -1;
-					dotwCell.dataset.col = index;
-					dotwCell.onclick = function () {
-						onCellClick([this.dataset.row, this.dataset.col], false, true);
-					};
-
-					dotwCell.innerHTML = "<b>" + item + "</b>";
-
-
-					headRow.appendChild(dotwCell);
-				});
-
-				// build the top level parent
-				var headRoot = document.createElement("thead");
-				headRoot.appendChild(headRow);
-				
-				return headRoot;
-			}
-			
-			function buildCalendarTableBody (tableData) {
-				var tableBody = document.createElement("tbody");
-				
-				for (var rowIdx = 0; rowIdx < tableData.rows; rowIdx++) {
-					var tableRow = document.createElement("tr");
-					tableRow.id = "week-" + rowIdx;
-					
-					// week idx
-					var weekIdxCell = buildTableCell("", "week-" + rowIdx);
-					weekIdxCell.dataset.row = rowIdx;
-					weekIdxCell.dataset.col = -1;
-					weekIdxCell.innerHTML = "<b>" + tableData.data[rowIdx][0] + "</b>";
-					weekIdxCell.onclick = function () {
-						onCellClick([this.dataset.row, this.dataset.col], true, false);
-					};
-
-					tableRow.appendChild(weekIdxCell);	
-					
-					for (var colIdx = 1; colIdx < tableData.cols; colIdx++) {
-						if (tableData.data[rowIdx][colIdx] === "") {
-							tableRow.appendChild(buildTableCell("", ""));	
-						} else {  
-							var day = new Date(tableData.data[rowIdx][colIdx]);
-							var dayCell = buildTableCell(day.getDate(), "");
-							
-							dayCell.classList.add("day_cell");
-							
-							dayCell.dataset.row = rowIdx;
-							dayCell.dataset.col = colIdx-1;
-							
-							dayCell.dataset.day = day.getDate();
-							dayCell.dataset.month = day.getMonth();
-							dayCell.dataset.year = day.getFullYear();
-							
-							dayCell.onclick = function () {
-								onCellClick([this.dataset.row, this.dataset.col], false, false);
-							};
-							
-							tableRow.appendChild(dayCell);	
+						for (var colIdx = 1; colIdx < numCols; colIdx++) {
+							if (rowIdx === 0 && colIdx <= firstDay) {
+								// if cell is before the current month ?? intuitively < makes sense not <=
+								tableArray[rowIdx][colIdx] = "";
+							} else if (dayCounter > numDaysInMonth) {
+								// if cell is after the current month
+								tableArray[rowIdx][colIdx] = "";
+							} else {
+								tableArray[rowIdx][colIdx] = new Date(year, month, dayCounter);
+								dayCounter++;
+							}
 						}
 					}
 
-					// after constructing the row, append it to the body
-					tableBody.appendChild(tableRow);
-				}
-
-				return tableBody;
-			}
-
-			function buildCalendarHeader () {
-				var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
-				var leftArrow = document.createElement("button");
-				leftArrow.id = "leftArrowSelector";
-				leftArrow.innerHTML = "<";
-				
-				if (curDate <= minDate) {
-					leftArrow.style.visibility = "hidden";
-				}
-				
-				leftArrow.onclick = function () {
-					var curMonth = curDate.getMonth();
-					var curYear = curDate.getFullYear();
-					
-					curMonth -= 1;
-
-					if (curMonth < 0) {
-						curMonth = 11;
-						curYear -= 1;
-					}
-
-					curDate = new Date(curYear, curMonth);;
-					showCalendar(curDate);
+					return {
+						data: tableArray,
+						rows: numRows,
+						cols: numCols
+					};
 				};
-				
-				var rightArrow = document.createElement("button");
-				rightArrow.id = "rightArrowSelector";
-				rightArrow.innerHTML = ">";
-				rightArrow.onclick = function () {
-					var curMonth = curDate.getMonth();
-					var curYear = curDate.getFullYear();
-					
-					curMonth += 1;
-					
-					if (curMonth > 11) {
-						curMonth = 0;
-						curYear += 1;
-					}
-
-					curDate = new Date(curYear, curMonth);
-					showCalendar(curDate);
-				};
-				
-				if (curDate >= maxDate) {
-					rightArrow.style.visibility = "hidden";
-				}
-				
-				var title = document.createElement("span");
-				title.innerHTML = months[curDate.getMonth()] + "&emsp;" + curDate.getFullYear();
-				title.classList.add("noselect");
-				
-				var headerParent = document.createElement("div");
-				headerParent.id = "dtp_header";
-				
-				headerParent.appendChild(leftArrow);
-				headerParent.appendChild(title);
-				headerParent.appendChild(rightArrow);
-				
-				return headerParent;
-			}
-
-			function showCalendar (curDate) {
-				// month [1, 12] year (eg. 2019)
-				var calendarDiv = document.getElementById("dtp_calendar");
-				calendarDiv.innerHTML = "";
-
-				var tableData = buildCalendarArray(curDate.getMonth(), curDate.getFullYear());
-
-				// --------------------------------------------------------
-				var parent = document.createElement("div");
-
-				parent.appendChild(buildCalendarHeader());
-				
-				var tableParent = document.createElement("table");
-				tableParent.rules="groups";
-				
-				tableParent.appendChild(buildCalendarTableHead());
-				tableParent.appendChild(buildCalendarTableBody(tableData));
-				parent.appendChild(tableParent);
-				
-				calendarDiv.appendChild(parent);
-				// --------------------------------------------------------
-				
-				// toggle all of the selected dates on
-				selectDates(selectedDates);
-				
-				return tableData;
-			}
-
-			function toggleCell (rowIdx, colIdx) {
-				var rowQuery = "[data-row='" + rowIdx + "']";
-				var colQuery = "[data-col='" + colIdx + "']";
-				var classQuery = ".day_cell";
-
-				var cell = document.querySelectorAll(classQuery + rowQuery + colQuery)[0];
 	
-				var cellDate = new Date(
-					cell.dataset.year,
-					cell.dataset.month,
-					cell.dataset.day,
-				);
+				var buildCalendarTableHead = function () {
+					/*
+						Builds the header of the table (contains Sun, Mon, Tue...)
+					*/
+					
+					var headRow = document.createElement("tr");
+					
+					headRow.appendChild(document.createElement("td")); // empty placeholder for week number
 
-				if (cell.classList.toString().includes("selected_cell")) {
-					cell.classList.remove("selected_cell");
-					
-					var index = indexOf(selectedDates, cellDate, compareTwoDates);
-					if (index > -1) {
-						selectedDates.splice(index, 1);
+					// build td for each day				
+					var dotwNames = dateUtils.getDaysOfTheWeek();
+					for (var idx = 0; idx < dotwNames.length; idx++) {
+						var dotwCell = buildTableCell("<b>" + dotwNames[idx] + "</b>", "");	
+						dotwCell.classList.add("table_col_header");
+						dotwCell.dataset.row = -1;
+						dotwCell.dataset.col = idx;
+
+						headRow.appendChild(dotwCell);
 					}
-				} else {
-					cell.classList.add("selected_cell");
+
+					// build the top level parent
+					var headRoot = document.createElement("thead");
+					headRoot.appendChild(headRow);
 					
-					if (indexOf(selectedDates, cellDate, compareTwoDates) === -1) {
-						selectedDates.push(cellDate);
+					return headRoot;
+				}
+			
+				var buildCalendarTableBody = function (date) {
+					var tableBody = document.createElement("tbody");
+					var tableData = buildTableObject(date.getMonth(), date.getFullYear());
+
+					// every row represents a week
+					for (var rowIdx = 0; rowIdx < tableData.rows; rowIdx++) {
+						var tableRow = document.createElement("tr");
+						tableRow.id = "week-" + rowIdx;
+						
+						// week idx
+						var weekIdxCell = buildTableCell("<b>" + tableData.data[rowIdx][0] + "</b>", "week-" + rowIdx);
+						weekIdxCell.classList.add("table_row_header");
+						weekIdxCell.dataset.row = rowIdx;
+						weekIdxCell.dataset.col = -1;
+
+						tableRow.appendChild(weekIdxCell);	
+						
+						// every column represents a day of the week
+						for (var colIdx = 1; colIdx < tableData.cols; colIdx++) {
+							if (tableData.data[rowIdx][colIdx] === "") {
+								tableRow.appendChild(buildTableCell("", ""));	
+							} else {  
+								var day = new Date(tableData.data[rowIdx][colIdx]);
+								var dayCell = buildTableCell(day.getDate(), "");
+								
+								dayCell.classList.add("day_cell");
+								
+								dayCell.dataset.row = rowIdx;
+								dayCell.dataset.col = colIdx-1;
+								
+								dayCell.dataset.day = day.getDate();
+								dayCell.dataset.month = day.getMonth();
+								dayCell.dataset.year = day.getFullYear();
+								
+								tableRow.appendChild(dayCell);	
+							}
+						}
+
+						// after constructing the row, append it to the body
+						tableBody.appendChild(tableRow);
 					}
+
+					return tableBody;
 				}
 
-				return [cell];
-			}
-			
-			function toggleCol (colIdx) {
-				var colQuery = "[data-col='" + colIdx + "']";
-				var classQuery = ".day_cell";
-
-				var cells = document.querySelectorAll(classQuery + colQuery);
-				
-				for (var cellIdx = 0; cellIdx < cells.length; cellIdx++) {
-					var cell = cells[cellIdx];
+				var buildCalendarHeader = function (date) {
+					var leftArrow = document.createElement("button");
+					leftArrow.id = "leftArrowSelector";
+					leftArrow.innerHTML = "<";
 					
+					var rightArrow = document.createElement("button");
+					rightArrow.id = "rightArrowSelector";
+					rightArrow.innerHTML = ">";
+					
+					var title = document.createElement("span");
+					title.innerHTML = dateUtils.getMonths()[date.getMonth()] + "&emsp;" + date.getFullYear();
+					title.classList.add("noselect");
+					
+					var headerParent = document.createElement("div");
+					headerParent.id = "dtp_header";
+					
+					headerParent.appendChild(leftArrow);
+					headerParent.appendChild(title);
+					headerParent.appendChild(rightArrow);
+					
+					return headerParent;
+				};
+
+				this.buildCalendar = function (date) {
+					var calendarParent = document.createElement("div");
+
+					calendarParent.appendChild(buildCalendarHeader(date));
+					
+					var tableParent = document.createElement("table");
+					tableParent.rules="groups";
+					
+					tableParent.appendChild(buildCalendarTableHead());
+					tableParent.appendChild(buildCalendarTableBody(date));
+					calendarParent.appendChild(tableParent);
+
+					return calendarParent;
+				};
+			};
+			
+			var datepickerUtils = new function () {
+				var selectedDates = [];
+
+				var minDate = new Date(1970, 0);
+				var maxDate = new Date(2370, 0);
+				var curDate = minDate;
+
+				var onGotoNextMonthPressed = function () {
+					/* Goes to the next month, handles rolling over to the next year */
+
+					var month = curDate.getMonth();
+					var year = curDate.getFullYear();
+					
+					month += 1;
+					
+					if (month > 11) {
+						month = 0;
+						year += 1;
+					}
+
+					datepickerUtils.showCalendar(new Date(year, month));
+				};
+				
+				var onGotoPreviousMonthPressed = function () {
+					/* Goes to the previous month, handles rolling over to the previous year */
+
+					var month = curDate.getMonth();
+					var year = curDate.getFullYear();
+					
+					month -= 1;
+					
+					if (month < 0) {
+						month = 11;
+						year -= 1;
+					}
+
+					datepickerUtils.showCalendar(new Date(year, month));
+				}
+
+				var handleCellToggle = function (dt_tdCell) {	
 					var cellDate = new Date(
-						cell.dataset.year,
-						cell.dataset.month,
-						cell.dataset.day
+						dt_tdCell.dataset.year,
+						dt_tdCell.dataset.month,
+						dt_tdCell.dataset.day,
 					);
 					
-					if (cell.classList.toString().includes("selected_cell")) {
-						cell.classList.remove("selected_cell");
+					if (dt_tdCell.classList.toString().includes("selected_cell")) {
+						dt_tdCell.classList.remove("selected_cell");
 						
-						var index = indexOf(selectedDates, cellDate, compareTwoDates);
+						var index = jsUtils.indexOf(selectedDates, cellDate, dateUtils.compareTwoDates);
 						if (index > -1) {
 							selectedDates.splice(index, 1);
 						}
 					} else {
-						cell.classList.add("selected_cell");
+						dt_tdCell.classList.add("selected_cell");
 						
-						if (indexOf(selectedDates, cellDate, compareTwoDates) === -1) {
+						if (jsUtils.indexOf(selectedDates, cellDate, dateUtils.compareTwoDates) === -1) {
 							selectedDates.push(cellDate);
 						}
 					}
-				}
+				};
 
-				return cells;
-			}
-			
-			function toggleRow (rowIdx) {
-				var rowQuery = "[data-row='" + rowIdx + "']";
-				var classQuery = ".day_cell";
-
-				var cells = document.querySelectorAll(classQuery + rowQuery);
-
-				for (var cellIdx = 0; cellIdx < cells.length; cellIdx++) {
-					var cell = cells[cellIdx];
-
-					var cellDate = new Date(
-						cell.dataset.year,
-						cell.dataset.month,
-						cell.dataset.day
-					);
-
-					if (cell.classList.toString().includes("selected_cell")) {					
-						cell.classList.remove("selected_cell");
-
-						var index = indexOf(selectedDates, cellDate, compareTwoDates);
-						console.log(index);
-						if (index > -1) {
-							selectedDates.splice(index, 1);
-						}
-					} else {
-						cell.classList.add("selected_cell");
-						
-						if (indexOf(selectedDates, cellDate, compareTwoDates) === -1) {
-							selectedDates.push(cellDate);
-						}
+				var registerButtons = function () {
+					// register on goto next month button
+					var gotoNextMonthButton = document.getElementById("rightArrowSelector");
+					gotoNextMonthButton.addEventListener("click", onGotoNextMonthPressed);
+					if (curDate >= maxDate) {
+						gotoNextMonthButton.style.visibility = "hidden";
 					}
-				}
-				
-				return cells;
-			}
-			
-			function selectDates (dateArray) {
-				for (var idx = 0; idx < dateArray.length; idx++) {
-					var dayQuery = "[data-day='" + dateArray[idx].getDate() + "']";
-					var monthQuery = "[data-month='" + dateArray[idx].getMonth() + "']";
-					var yearQuery = "[data-year='" + dateArray[idx].getFullYear() + "']";
 
-					var dayCell = document.querySelectorAll(dayQuery + monthQuery + yearQuery)[0];
+					// register on goto previous month button
+					var gotoPreviousMonthButton = document.getElementById("leftArrowSelector");
+					gotoPreviousMonthButton.addEventListener("click", onGotoPreviousMonthPressed);
+					if (curDate <= minDate) {
+						gotoPreviousMonthButton.style.visibility = "hidden";
+					}
 					
-					if (typeof dayCell !== "undefined") {
-						if (!(dayCell.classList.toString().includes("selected_cell"))) {					
-							dayCell.classList.add("selected_cell");
-						}
+					// register on day clicked
+					var dayCells = document.getElementsByClassName("day_cell");
+					for (var idx = 0; idx < dayCells.length; idx++) {
+						dayCells[idx].addEventListener("click", function () {
+								handleCellToggle(this);
+							}
+						);
+					}
+					
+					// register on week clicked
+					var weekRows = document.getElementsByClassName("table_row_header");
+					for (var idx = 0; idx < weekRows.length; idx++) {
+						weekRows[idx].addEventListener("click", function () {
+								datepickerUtils.toggleRow(
+									this.dataset.row
+								);
+							}
+						);
+					}
+					
+					// register on dotw clicked
+					var dotwCols = document.getElementsByClassName("table_col_header");
+					for (var idx = 0; idx < dotwCols.length; idx++) {
+						dotwCols[idx].addEventListener("click", function () {
+								datepickerUtils.toggleColumn(
+									this.dataset.col
+								);
+							}
+						);
 					}
 				}
-			}
-			
-			// 5 rows, 8 columns (1 for week num, 7 for dotw)
-			var numRows = 6; 
-			var numCols = 8;
-			
-			var selectedDates = [];
-			
-			// tableArray maintains the table data
-			var tableArray = createArray(numRows, numCols);
+
+				this.showCalendar = function (date) {
+					curDate = date;
+					
+					var calendarDiv = document.getElementById("dtp_calendar");
+					
+					// push the calendar into the visible dom
+					calendarDiv.innerHTML = "";
+					calendarDiv.appendChild(datepickerFactory.buildCalendar(date));
+
+					registerButtons();
+					
+					// toggle all of the selected dates on
+					datepickerUtils.selectDates(selectedDates);
+				};
+
+				this.setMinDate = function (date) {
+					minDate = date;
+				};
+				
+				this.setMaxDate = function (date) {
+					maxDate = date;
+				};
+
+				this.toggleCell = function (rowIdx, colIdx) {
+					var rowQuery = "[data-row='" + rowIdx + "']";
+					var colQuery = "[data-col='" + colIdx + "']";
+					var classQuery = ".day_cell";
+
+					var cell = document.querySelectorAll(classQuery + rowQuery + colQuery)[0];
+					handleCellToggle(cell);
+				};
+				
+				this.toggleColumn = function  (colIdx) {
+					var colQuery = "[data-col='" + colIdx + "']";
+					var classQuery = ".day_cell";
+
+					var cells = document.querySelectorAll(classQuery + colQuery);
+					for (var cellIdx = 0; cellIdx < cells.length; cellIdx++) {
+						handleCellToggle(cells[cellIdx]);
+					}
+				};
+				
+				this.toggleRow = function  (rowIdx) {
+					var rowQuery = "[data-row='" + rowIdx + "']";
+					var classQuery = ".day_cell";
+
+					var cells = document.querySelectorAll(classQuery + rowQuery);
+					for (var cellIdx = 0; cellIdx < cells.length; cellIdx++) {
+						handleCellToggle(cells[cellIdx]);
+					}
+				};
+				
+				this.selectDates = function  (dateArray) {
+					for (var idx = 0; idx < dateArray.length; idx++) {
+						var dayQuery = "[data-day='" + dateArray[idx].getDate() + "']";
+						var monthQuery = "[data-month='" + dateArray[idx].getMonth() + "']";
+						var yearQuery = "[data-year='" + dateArray[idx].getFullYear() + "']";
+
+						var dayCells = document.querySelectorAll(dayQuery + monthQuery + yearQuery);
+						
+						if (dayCells.length === 1) {
+							handleCellToggle(dayCells[0]);
+						}
+					}
+				};
+			}			
         </script>
 
 		<script>
-			var curDate = new Date(2019, 9);
-			var minDate = new Date(2019, 8);
-			var maxDate = new Date(2019, 10);
-
-			showCalendar(curDate);
+			datepickerUtils.setMaxDate(new Date(2019, 10));
+			datepickerUtils.setMinDate(new Date(2019, 8));
+			datepickerUtils.showCalendar(new Date(2019, 9));
 
 			function onCellClick (cellIdx, isWeekSelectionToggle, isDaySelectionToggle) {
-				var changedCells = [];
-			
+				console.log(event.shiftKey);
+				
 				if (isWeekSelectionToggle) {
-					changedCells = toggleRow(cellIdx[0]);
+					toggleRow(cellIdx[0]);
+					toggleRow(cellIdx[0]);
 				} else if (isDaySelectionToggle) {
-					changedCells = toggleCol(cellIdx[1]);
+					toggleCol(cellIdx[1]);
 				} else {
-					changedCells = toggleCell(cellIdx[0], cellIdx[1]);
+					toggleCell(cellIdx[0], cellIdx[1]);
 				}
+			}
+			
+			function onDOTWClicked () {
+			
 			}
 		</script>
     </body>
