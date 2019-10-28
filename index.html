@@ -7,8 +7,7 @@
 
         <link rel="stylesheet" type="text/css" href="jquery.datetimepicker.css"/>
 
-
-		<style>		
+		<style>
 			.noselect {
 			  -webkit-touch-callout: none; /* iOS Safari */
 				-webkit-user-select: none; /* Safari */
@@ -18,7 +17,7 @@
 						user-select: none; /* Non-prefixed version, currently supported by Chrome and Opera */
 			}
 
-			#dtp_calendar {
+			#dp_datepicker {
 				display:inline-block;
 			}
 
@@ -38,19 +37,19 @@
 				display: flex;
 				justify-content: space-between;
 			}
-			
+
 			.table_cell  {
 				padding: 0px;
 				width: 35px;
 				height: 35px;
 			}
 
-			
+
 			td > div {
 				width: 100%;
 				height: 100%;
 			}
-			
+
 			td > div > p {
 				margin: 0;
 				position: relative;
@@ -59,35 +58,76 @@
 				-ms-transform: translate(-50%, -50%);
 				transform: translate(-50%, -50%);
 			}
-			
+
 			.selected_cell > div {
 				background-color: lightblue;
-				
+
 				width: 75%;
 				height: 75%;
 				margin: auto;
-				
+
 				border-radius: 50%;
 			}
 		</style>
-    
+
 		<style>
+			* {
+				/* temp */
+				-webkit-touch-callout: none;
+				-webkit-user-select: none;
+				-khtml-user-select: none;
+				-moz-user-select: none;
+				-ms-user-select: none;
+				user-select: none;
+			}
+
+			#tp_timepicker {
+				display: inline-block;
+			}
+
 			#tp_listParent {
+				display: inline-block;
+
+				height: 100%;
+				overflow-y: scroll;
+
+				position: relative;
+			}
+
+			#tp_listParent > div {
+				padding-left: 3px;
+				padding-right: 10px;
+			}
+
+			.tp_selected {
+				background-color:lightblue;
+			}
+		</style>
+
+		<style>
+			#dtp {
 				display:inline-block;
-				height: 100px;
-				max-height: 100px;
-				
-				overflow-y: hidden;
-				
-				border: 1px solid black;
-			};
+				border: 1px solid grey;
+				padding: 10px;
+			}
+
+			#dtp > #dp_datepicker {
+				float: left;
+			}
+
+			#dtp > #tp_timepicker {
+				float: right;
+				margin-left: 10px;
+				height: 266px;
+			}
 		</style>
 	</head>
 
     <body>
-		<div id="dtp_datepicker"></div>
-		<div id="dtp_timepicker"></div>
-
+		<div id="dtp">
+			<div id="dp_datepicker"></div>
+			<div id="tp_timepicker"></div>
+		</div>
         <script>
 			var jsUtils = new function () {
 				// creates an n-dimensional array createArray(length...)
@@ -108,7 +148,7 @@
 
 					return arr;
 				};
-				
+
 				// a comparison function for an array of a list of objects
 				this.indexOf = function (array, value, compareFn) {
 					for (var idx = 0; idx < array.length; idx++) {
@@ -116,17 +156,17 @@
 							return idx;
 						}
 					}
-					
+
 					return -1;
 				};
 			};
-			
+
 			var dateUtils = new function () {
 				this.daysInMonth = function (date) {
 					// check how many days in a month code from https://dzone.com/articles/determining-number-days-month
 					return 32 - new Date(date.getFullYear(), date.getMonth(), 32).getDate();
 				}
-			
+
 				this.compareTwoDates = function (dateA, dateB) {
 					if (dateA.getTime() === dateB.getTime()) {
 						return true;
@@ -134,13 +174,13 @@
 
 					return false;
 				};
-				
+
 				this.getWeek = function (date) {
 					// get week number adapted from https://stackoverflow.com/questions/7765767/show-week-number-with-javascript
 					var onejan = new Date(date.getFullYear(), 0, 4);
 					return Math.ceil((((date - onejan) / 86400000) + onejan.getDay() + 1) / 7);
 				};
-				
+
 				this.getDaysOfTheWeek = function () {
 					return [
 						"Sun",
@@ -152,29 +192,29 @@
 						"Sat"
 					];
 				};
-			
+
 				this.getMonths = function () {
 					return [
-						"January", 
-						"February", 
-						"March", 
-						"April", 
-						"May", 
-						"June", 
-						"July", 
-						"August", 
-						"September", 
-						"October", 
-						"November", 
+						"January",
+						"February",
+						"March",
+						"April",
+						"May",
+						"June",
+						"July",
+						"August",
+						"September",
+						"October",
+						"November",
 						"December"
 					];
 				};
-			
+
 			};
 
 			var datepickerFactory = new function () {
 				// 5 rows, 8 columns (1 for week num, 7 for dotw)
-				var numRows = 6; 
+				var numRows = 6;
 				var numCols = 8;
 
 				var buildTableCell = function (innerHTML, id) {
@@ -183,19 +223,19 @@
 						div tag is for background
 						p tag is for text
 					*/
-					
+
 					var tableCell = document.createElement("td");
 					tableCell.className = "table_cell";
 					tableCell.id = id;
-					
+
 					var tableCellDiv = document.createElement("div");
 					var tableCellP = document.createElement("p");
-					
+
 					tableCellP.innerHTML = innerHTML;
-				
+
 					tableCellDiv.appendChild(tableCellP);
 					tableCell.appendChild(tableCellDiv);
-					
+
 					return tableCell;
 				};
 
@@ -207,7 +247,7 @@
 					*/
 
 					var tableArray = jsUtils.createArray(numRows, numCols);
-					
+
 					// prepare some metadata about the given month and year
 					var date = new Date(year, month);
 
@@ -216,11 +256,11 @@
 
 					var dayCounter = 1;
 					var numDaysInMonth = dateUtils.daysInMonth(date);
-					
+
 					// loop over each element in the table array
 					for (var rowIdx = 0; rowIdx < numRows; rowIdx++) {
 						tableArray[rowIdx][0] = firstWeek + rowIdx;
-						
+
 						for (var colIdx = 1; colIdx < numCols; colIdx++) {
 							if (rowIdx === 0 && colIdx <= firstDay) {
 								// if cell is before the current month ?? intuitively < makes sense not <=
@@ -241,20 +281,20 @@
 						cols: numCols
 					};
 				};
-	
+
 				var buildCalendarTableHead = function () {
 					/*
 						Builds the header of the table (contains Sun, Mon, Tue...)
 					*/
-					
+
 					var headRow = document.createElement("tr");
-					
+
 					headRow.appendChild(document.createElement("td")); // empty placeholder for week number
 
-					// build td for each day				
+					// build td for each day
 					var dotwNames = dateUtils.getDaysOfTheWeek();
 					for (var idx = 0; idx < dotwNames.length; idx++) {
-						var dotwCell = buildTableCell("<b>" + dotwNames[idx] + "</b>", "");	
+						var dotwCell = buildTableCell("<b>" + dotwNames[idx] + "</b>", "");
 						dotwCell.classList.add("table_col_header");
 						dotwCell.dataset.row = -1;
 						dotwCell.dataset.col = idx;
@@ -265,10 +305,10 @@
 					// build the top level parent
 					var headRoot = document.createElement("thead");
 					headRoot.appendChild(headRow);
-					
+
 					return headRoot;
 				}
-			
+
 				var buildCalendarTableBody = function (date) {
 					var tableBody = document.createElement("tbody");
 					var tableData = buildTableObject(date.getMonth(), date.getFullYear());
@@ -277,33 +317,33 @@
 					for (var rowIdx = 0; rowIdx < tableData.rows; rowIdx++) {
 						var tableRow = document.createElement("tr");
 						tableRow.id = "week-" + rowIdx;
-						
+
 						// week idx
 						var weekIdxCell = buildTableCell("<b>" + tableData.data[rowIdx][0] + "</b>", "week-" + rowIdx);
 						weekIdxCell.classList.add("table_row_header");
 						weekIdxCell.dataset.row = rowIdx;
 						weekIdxCell.dataset.col = -1;
 
-						tableRow.appendChild(weekIdxCell);	
-						
+						tableRow.appendChild(weekIdxCell);
+
 						// every column represents a day of the week
 						for (var colIdx = 1; colIdx < tableData.cols; colIdx++) {
 							if (tableData.data[rowIdx][colIdx] === "") {
-								tableRow.appendChild(buildTableCell("", ""));	
-							} else {  
+								tableRow.appendChild(buildTableCell("", ""));
+							} else {
 								var day = new Date(tableData.data[rowIdx][colIdx]);
 								var dayCell = buildTableCell(day.getDate(), "");
-								
+
 								dayCell.classList.add("day_cell");
-								
+
 								dayCell.dataset.row = rowIdx;
 								dayCell.dataset.col = colIdx-1;
-								
+
 								dayCell.dataset.day = day.getDate();
 								dayCell.dataset.month = day.getMonth();
 								dayCell.dataset.year = day.getFullYear();
-								
-								tableRow.appendChild(dayCell);	
+
+								tableRow.appendChild(dayCell);
 							}
 						}
 
@@ -318,22 +358,22 @@
 					var leftArrow = document.createElement("button");
 					leftArrow.id = "leftArrowSelector";
 					leftArrow.innerHTML = "<";
-					
+
 					var rightArrow = document.createElement("button");
 					rightArrow.id = "rightArrowSelector";
 					rightArrow.innerHTML = ">";
-					
+
 					var title = document.createElement("span");
 					title.innerHTML = dateUtils.getMonths()[date.getMonth()] + "&emsp;" + date.getFullYear();
 					title.classList.add("noselect");
-					
+
 					var headerParent = document.createElement("div");
 					headerParent.id = "dtp_header";
-					
+
 					headerParent.appendChild(leftArrow);
 					headerParent.appendChild(title);
 					headerParent.appendChild(rightArrow);
-					
+
 					return headerParent;
 				};
 
@@ -341,30 +381,30 @@
 					var calendarParent = document.createElement("div");
 
 					calendarParent.appendChild(buildCalendarHeader(date));
-					
+
 					var tableParent = document.createElement("table");
 					tableParent.rules="groups";
-					
+
 					tableParent.appendChild(buildCalendarTableHead());
 					tableParent.appendChild(buildCalendarTableBody(date));
 					calendarParent.appendChild(tableParent);
 
 					return calendarParent;
 				};
-				
+
 				this.getNumRows = function () {
 					return numRows;
 				};
-				
+
 				this.getNumCols = function () {
 					return numCols - 1;
 				}
-				
+
 				this.getNumColsFull = function () {
 					return numCols;
 				}
 			};
-			
+
 			var datepickerUtils = new function () {
 				var minDate = new Date(1970, 0);
 				var maxDate = new Date(2370, 0);
@@ -375,15 +415,15 @@
 
 				var selectedDates = [];
 				var previousSelectedCell = -1;
-				
+
 				var onGotoNextMonthPressed = function () {
 					/* Goes to the next month, handles rolling over to the next year */
 
 					var month = curDate.getMonth();
 					var year = curDate.getFullYear();
-					
+
 					month += 1;
-					
+
 					if (month > 11) {
 						month = 0;
 						year += 1;
@@ -391,15 +431,15 @@
 
 					datepickerUtils.showCalendar(new Date(year, month));
 				};
-				
+
 				var onGotoPreviousMonthPressed = function () {
 					/* Goes to the previous month, handles rolling over to the previous year */
 
 					var month = curDate.getMonth();
 					var year = curDate.getFullYear();
-					
+
 					month -= 1;
-					
+
 					if (month < 0) {
 						month = 11;
 						year -= 1;
@@ -408,39 +448,39 @@
 					datepickerUtils.showCalendar(new Date(year, month));
 				};
 
-				var onDayPressed = function () {					
+				var onDayPressed = function () {
 					if (event.shiftKey && previousSelectedCell !== -1 ) {
 						var comparePositions = function (posA, posB) {
 							return posA[0] === posB[0] && posA[1] === posB[1];
 						};
-						
+
 						var startPosition = [
 							Number(previousSelectedCell.dataset.row),
 							Number(previousSelectedCell.dataset.col)
 						];
-						
+
 						var endPosition = [
 							Number(this.dataset.row),
 							Number(this.dataset.col)
 						];
-							
+
 						var currentPosition = startPosition;
-						
+
 						while (!comparePositions(currentPosition, endPosition)) {
 							datepickerUtils.toggleCell(...currentPosition);
-							
+
 							var nextRow = currentPosition[0];
 							var nextCol = currentPosition[1] + 1;
-							
+
 							if (nextCol > datepickerFactory.getNumCols()-1) {
 								// not sure why -1 atm
 								nextRow += 1;
 								nextCol = 0;
 							}
-							
+
 							currentPosition[0] = nextRow;
 							currentPosition[1] = nextCol;
-							
+
 							if (currentPosition[0] > 5) {
 								break; // safety
 							}
@@ -450,7 +490,7 @@
 					} else {
 						handleCellToggle(this);
 					}
-					
+
 					previousSelectedCell = this;
 				};
 
@@ -459,7 +499,7 @@
 						this.dataset.row
 					);
 				};
-				
+
 				var onDOTWPressed = function () {
 					datepickerUtils.toggleColumn(
 						this.dataset.col
@@ -469,23 +509,23 @@
 				// ------------------------------------------------------------
 				// internal utilities
 
-				var handleCellToggle = function (dt_tdCell) {	
+				var handleCellToggle = function (dt_tdCell) {
 					var cellDate = new Date(
 						dt_tdCell.dataset.year,
 						dt_tdCell.dataset.month,
 						dt_tdCell.dataset.day,
 					);
-					
+
 					if (dt_tdCell.classList.toString().includes("selected_cell")) {
 						dt_tdCell.classList.remove("selected_cell");
-						
+
 						var index = jsUtils.indexOf(selectedDates, cellDate, dateUtils.compareTwoDates);
 						if (index > -1) {
 							selectedDates.splice(index, 1);
 						}
 					} else {
 						dt_tdCell.classList.add("selected_cell");
-						
+
 						if (jsUtils.indexOf(selectedDates, cellDate, dateUtils.compareTwoDates) === -1) {
 							selectedDates.push(cellDate);
 						}
@@ -506,19 +546,19 @@
 					if (curDate <= minDate) {
 						gotoPreviousMonthButton.style.visibility = "hidden";
 					}
-					
+
 					// register on day clicked
 					var dayCells = document.getElementsByClassName("day_cell");
 					for (var idx = 0; idx < dayCells.length; idx++) {
 						dayCells[idx].addEventListener("click", onDayPressed);
 					}
-					
+
 					// register on week clicked
 					var weekRows = document.getElementsByClassName("table_row_header");
 					for (var idx = 0; idx < weekRows.length; idx++) {
 						weekRows[idx].addEventListener("click", onWeekPresed);
 					}
-					
+
 					// register on dotw clicked
 					var dotwCols = document.getElementsByClassName("table_col_header");
 					for (var idx = 0; idx < dotwCols.length; idx++) {
@@ -528,18 +568,18 @@
 
 				// ------------------------------------------------------------
 				// public api
-				
+
 				this.showCalendar = function (date) {
 					curDate = date;
-					
-					var calendarDiv = document.getElementById("dtp_datepicker");
-					
+
+					var calendarDiv = document.getElementById("dp_datepicker");
+
 					// push the calendar into the visible dom
 					calendarDiv.innerHTML = "";
 					calendarDiv.appendChild(datepickerFactory.buildCalendar(date));
 
 					registerButtons();
-					
+
 					// toggle all of the selected dates on
 					datepickerUtils.selectDates(selectedDates);
 				};
@@ -547,7 +587,7 @@
 				this.setMinDate = function (date) {
 					minDate = date;
 				};
-				
+
 				this.setMaxDate = function (date) {
 					maxDate = date;
 				};
@@ -558,12 +598,12 @@
 					var classQuery = ".day_cell";
 
 					var queryResults = document.querySelectorAll(classQuery + rowQuery + colQuery);
-					
+
 					if (queryResults.length === 1) {
 						handleCellToggle(queryResults[0]);
 					}
 				};
-				
+
 				this.toggleColumn = function  (colIdx) {
 					var colQuery = "[data-col='" + colIdx + "']";
 					var classQuery = ".day_cell";
@@ -573,7 +613,7 @@
 						handleCellToggle(cells[cellIdx]);
 					}
 				};
-				
+
 				this.toggleRow = function  (rowIdx) {
 					var rowQuery = "[data-row='" + rowIdx + "']";
 					var classQuery = ".day_cell";
@@ -583,7 +623,7 @@
 						handleCellToggle(cells[cellIdx]);
 					}
 				};
-				
+
 				this.selectDates = function  (dateArray) {
 					for (var idx = 0; idx < dateArray.length; idx++) {
 						var dayQuery = "[data-day='" + dateArray[idx].getDate() + "']";
@@ -591,93 +631,118 @@
 						var yearQuery = "[data-year='" + dateArray[idx].getFullYear() + "']";
 
 						var dayCells = document.querySelectorAll(dayQuery + monthQuery + yearQuery);
-						
+
 						if (dayCells.length === 1) {
 							handleCellToggle(dayCells[0]);
 						}
 					}
 				};
-			}			
-        
+			}
+
 			var timepickerFactory = new function () {
 				var composeTimeString = function (hour, minute) {
 					var hrStr = hour.toString();
 					var minuteStr = minute.toString();
-					
+
 					if (hrStr.length != 2) {
 						hrStr = "0" + hrStr;
 					}
-					
+
 					if (minuteStr.length != 2) {
 						minuteStr = "0" + minuteStr;
 					}
-					
+
 					return hrStr + ":" + minuteStr;
 				}
-		
+
 				var buildTimeSelectionObject = function (increment) {
 					var times = [];
-					
+
 					if (increment === 0) {
 						console.error("Increment cannot be 0!");
 						return;
 					}
-					
+
 					if (60 % increment !== 0) {
 						console.error("Increment needs to be evenly divisible by 60!");
 						return;
 					}
-					
+
 					var stepsPerHour = Math.floor(60 / increment)
 					var numElements = 24 * stepsPerHour;
 
 					for (var counter = 0; counter < numElements; counter++) {
 						var minute = increment * (counter % stepsPerHour);
 						var hour = Math.floor(counter / stepsPerHour);
-						
+
 						times.push([hour, minute])
 					}
-					
+
 					return times;
 				}
-			
-				this.buildTimePicker = function (increment) {
+
+				var buildTimeSelectionDivList = function (increment) {
 					var times = buildTimeSelectionObject(increment);
-				
+
 					var timeListParent = document.createElement("div");
 					timeListParent.id = "tp_listParent";
-					
+
 					for (var idx = 0; idx < times.length; idx++) {
 						var timeElement = document.createElement("div");
 						timeElement.innerHTML = composeTimeString(...times[idx]);
+						timeElement.classList.add("tp_time");
 						timeElement.dataset.hour = times[idx][0];
 						timeElement.dataset.minute = times[idx][1];
-						
+
 						timeListParent.appendChild(timeElement);
 					}
-					
+
 					return timeListParent;
 				};
-			};
-		
-			var timepickerUtils = new function () {
-				this.showTimePicker = function () {
-					var timepickerDiv = document.getElementById("dtp_timepicker");
-					
-					// push the calendar into the visible dom
-					timepickerDiv.innerHTML = "";
-					timepickerDiv.appendChild(timepickerFactory.buildTimePicker(5));
+
+				this.buildTimePicker = function (increment) {
+					return buildTimeSelectionDivList(increment);
 				}
 			};
-		
+
+			var timepickerUtils = new function () {
+				var handleSelectionToggle = function (tp_divCell) {
+					if (tp_divCell.classList.toString().includes("tp_selected")) {
+						tp_divCell.classList.remove("tp_selected");
+					} else {
+						tp_divCell.classList.add("tp_selected");
+					}
+				};
+
+				var registerEvents = function () {
+					// on clicks for each time
+					var timeElements = document.getElementsByClassName("tp_time");
+					for (var idx = 0; idx < timeElements.length; idx++) {
+						timeElements[idx].addEventListener("click", function () {
+							handleSelectionToggle(this);
+						});
+					}
+				}
+
+				this.showTimePicker = function (increment) {
+					var timepickerDiv = document.getElementById("tp_timepicker");
+
+					// push the calendar into the visible dom
+					timepickerDiv.innerHTML = "";
+					timepickerDiv.appendChild(timepickerFactory.buildTimePicker(increment));
+
+					registerEvents();
+				}
+			};
+
 		</script>
 
 		<script>
-			<!-- datepickerUtils.setMaxDate(new Date(2019, 10)); -->
-			<!-- datepickerUtils.setMinDate(new Date(2019, 8)); -->
-			<!-- datepickerUtils.showCalendar(new Date(2019, 9)); -->
-			
-			timepickerUtils.showTimePicker(10);
+			datepickerUtils.setMaxDate(new Date(2019, 10));
+			datepickerUtils.setMinDate(new Date(2019, 8));
+			datepickerUtils.showCalendar(new Date(2019, 9));
+
+			timepickerUtils.showTimePicker(30);
 		</script>
     </body>
 </html>
